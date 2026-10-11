@@ -1,0 +1,2230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>EPIC DUEL — Arena Combat</title>
+<style>
+:root{
+--bg:#090e18;
+--panel:#111b2a;
+--line:#35445a;
+--gold:#f5c56b;
+--text:#e8edf5;
+--muted:#9eacc0}
+*{
+box-sizing:border-box}
+body{
+margin:0;
+background:radial-gradient(ellipse at 50% -10%,#24354c 0,#0b1220 52%,#070b12 100%);
+color:var(--text);
+font-family:Arial,Helvetica,sans-serif;
+min-height:100vh;
+display:flex;
+justify-content:center}
+.app{
+width:min(1000px,100%);
+padding:16px}
+.top{
+display:flex;
+align-items:center;
+justify-content:space-between;
+gap:12px;
+margin:2px 2px 12px}
+.logo{
+font-size:clamp(18px,4vw,27px);
+font-weight:900;
+letter-spacing:2px;
+text-transform:uppercase}
+.logo span{
+color:var(--gold)}
+.sub{
+font-size:11px;
+color:var(--muted);
+letter-spacing:2px;
+margin-top:4px}
+.badge{
+border:1px solid #7b6035;
+color:#f8d895;
+background:#2c2418;
+padding:7px 10px;
+border-radius:5px;
+font-size:11px;
+letter-spacing:1px;
+white-space:nowrap}
+.arena{
+background:#0c1421;
+border:1px solid #39475b;
+border-radius:9px;
+overflow:hidden;
+box-shadow:0 20px 55px #0008}
+.fighters{
+display:grid;
+grid-template-columns:repeat(2,minmax(0,1fr));
+gap:12px;
+padding:13px;
+background:linear-gradient(180deg,#1a2738,#101927);
+border-bottom:1px solid #334258}
+.playercard{
+min-width:0}
+.playercard.ally{border-left:2px solid #3e9cbb;padding-left:8px}
+.playercard.enemy{border-left:2px solid #b95765;padding-left:8px}
+.modebar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 10px}
+.modebtn{min-height:0;padding:9px 13px;font-size:11px;letter-spacing:.5px}
+.modebtn.active{border-color:#f5c56b;background:linear-gradient(#66502b,#332719);color:#ffe3a1}
+.targetrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 10px;color:#9eacc0;font-size:11px}
+.targetbtn{min-height:0;padding:7px 10px;font-size:11px}
+.targetbtn.active{border-color:#65d9ff;color:#a9edff}
+@media(max-width:650px){.fighters{grid-template-columns:repeat(2,minmax(0,1fr))}.playercard{padding-bottom:6px}}
+/* Arrange both allies vertically on the left and both rivals vertically on the right. */
+.fighters>.playercard.player:not(.ally){grid-column:1;grid-row:1}
+.fighters>#p2Card{grid-column:1;grid-row:2}
+.fighters>.playercard.enemy:not(#e2Card){grid-column:2;grid-row:1}
+.fighters>#e2Card{grid-column:2;grid-row:2}
+.setup-overlay{position:fixed;inset:0;z-index:20;background:#050912eF;display:flex;align-items:center;justify-content:center;padding:14px;overflow:auto}
+.setup-panel{width:min(650px,100%);background:linear-gradient(145deg,#1b2a3e,#0b121e);border:1px solid #7b6845;border-radius:12px;padding:20px;box-shadow:0 25px 90px #000c}
+.setup-panel h2{margin:0 0 6px;color:#f5c56b;letter-spacing:1px}.setup-panel p{color:#b4c2d5;font-size:13px;line-height:1.5}.points-left{font-size:18px;font-weight:900;color:#6fe4bc;margin:12px 0}.skill-list{display:grid;gap:8px}.skill-row{display:grid;grid-template-columns:1fr auto auto auto;gap:10px;align-items:center;padding:10px;border:1px solid #35475e;border-radius:6px;background:#101b2a}.skill-row strong{display:block;font-size:13px}.skill-row small{display:block;color:#9eacc0;margin-top:3px;font-size:11px}.skill-row button{min-height:0;padding:7px 12px}.skill-row button[data-remove]{border-color:#784750;background:linear-gradient(#49252c,#24161c)}.skill-level{min-width:24px;text-align:center;font-weight:900;color:#f5d48a}.start-btn{width:100%;margin-top:14px;background:linear-gradient(#3a8068,#174a3b);border-color:#5ec8a2;font-weight:900}.skill-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.skill-actions button{min-height:0;padding:8px 11px}.shieldbar{height:5px;margin-top:3px;background:#07101b;border:1px solid #35475e}.shieldfill{height:100%;width:0;background:linear-gradient(90deg,#4a75db,#7ddcff)}
+.cardhead{
+display:flex;
+justify-content:space-between;
+align-items:center;
+gap:8px;
+font-weight:800;
+font-size:13px;
+margin-bottom:7px}
+.level{
+font-size:10px;
+color:#f2cc7a;
+border:1px solid #715b36;
+border-radius:3px;
+padding:3px 5px;
+white-space:nowrap}
+.hpbar,.energybar{
+height:12px;
+background:#050911;
+border:1px solid #445268;
+padding:2px;
+border-radius:3px;
+overflow:hidden}
+.hpfill{
+height:100%;
+background:linear-gradient(90deg,#a62e39,#f05c5c);
+transition:width .25s}
+.player .hpfill{
+background:linear-gradient(90deg,#16805f,#4ee0a1)}
+.energybar{
+height:6px;
+margin-top:4px}
+.energyfill{
+height:100%;
+width:100%;
+background:linear-gradient(90deg,#2667bd,#69c9ff)}
+.stats{
+display:flex;
+justify-content:space-between;
+color:#b7c4d5;
+font-size:10px;
+margin-top:5px}
+canvas{
+display:block;
+width:100%;
+height:auto;
+aspect-ratio:900/440;
+background:#101827}
+.log{
+min-height:51px;
+padding:12px 14px;
+background:#0b111b;
+border-top:1px solid #2b394d;
+color:#dce4ef;
+font-size:13px;
+line-height:1.45}
+.log strong{
+color:var(--gold)}
+.actions{
+padding:13px;
+background:linear-gradient(180deg,#172233,#101723);
+border-top:1px solid #39475b}
+.actiontitle{
+font-size:10px;
+color:#9cacc2;
+letter-spacing:2px;
+font-weight:800;
+margin:0 0 9px 2px}
+.buttons{
+display:grid;
+grid-template-columns:repeat(4,minmax(0,1fr));
+gap:8px}
+button{
+font:inherit;
+cursor:pointer;
+color:#e9eef7;
+border:1px solid #46566d;
+border-radius:5px;
+background:linear-gradient(#29384c,#182435);
+padding:12px 5px;
+min-height:66px;
+transition:filter .12s,border-color .12s,transform .12s}
+button:hover:not(:disabled){
+filter:brightness(1.22);
+border-color:#d7b56d}
+button:active:not(:disabled){
+transform:translateY(1px)}
+button:disabled{
+opacity:.42;
+cursor:not-allowed}
+.icon{
+font-size:20px;
+display:block;
+margin-bottom:5px}
+.btnname{
+font-size:12px;
+font-weight:800;
+display:block}
+.detail{
+font-size:10px;
+color:#a8b6c8;
+display:block;
+margin-top:4px}
+.special{
+border-color:#8d713f;
+background:linear-gradient(#514127,#292115)}
+.defend{
+background:linear-gradient(#283e53,#162431)}
+.footer{
+display:flex;
+justify-content:space-between;
+gap:8px;
+align-items:center;
+margin-top:10px;
+color:#8190a5;
+font-size:10px}
+.reset{
+min-height:0;
+padding:8px 12px;
+font-size:11px;
+letter-spacing:.5px}
+@media(max-width:520px){
+.app{
+padding:8px}
+.fighters{
+padding:9px;
+gap:8px}
+.buttons{
+grid-template-columns:repeat(2,minmax(0,1fr))}
+.badge{
+font-size:9px;
+padding:6px}
+.cardhead{
+font-size:11px}
+.log{
+font-size:12px}
+.sub{
+letter-spacing:1px}
+}
+
+/* Selected skill state: obvious pulsing ring and raised, illuminated button. */
+.buttons button.skill-selected{position:relative;z-index:2;border:2px solid #ffe18a!important;box-shadow:0 0 0 3px rgba(255,202,88,.24),0 0 22px rgba(255,190,66,.48),inset 0 0 18px rgba(255,218,120,.16);transform:translateY(-2px);animation:skillPulse 1.15s ease-in-out infinite}
+.buttons button.skill-selected::after{content:'SELECTED';position:absolute;right:5px;top:5px;font-size:8px;letter-spacing:1px;font-weight:900;color:#fff0b7;background:#5a411d;border:1px solid #f5c56b;border-radius:4px;padding:3px 5px}
+@keyframes skillPulse{0%,100%{box-shadow:0 0 0 3px rgba(255,202,88,.18),0 0 15px rgba(255,190,66,.35)}50%{box-shadow:0 0 0 6px rgba(255,202,88,.3),0 0 27px rgba(255,190,66,.65)}}
+.action-hint{margin:-2px 0 9px;padding:8px 10px;border:1px solid #35475e;border-radius:6px;background:linear-gradient(90deg,#142337,#101825);color:#bcd4e8;font-size:11px;line-height:1.45}
+.targetbtn.active{box-shadow:0 0 0 2px rgba(101,217,255,.2),0 0 13px rgba(101,217,255,.22)}
+@media(prefers-reduced-motion:reduce){.buttons button.skill-selected{animation:none}}
+
+/* Landscape-first full-screen battle layout */
+html,body{width:100%;height:100%;min-height:100%;overflow:hidden}
+body{align-items:stretch;justify-content:stretch}
+.app{width:100%;height:100dvh;max-width:none;padding:clamp(5px,1vw,14px);display:flex;flex-direction:column;gap:6px}
+.top{flex:0 0 auto;margin:0 2px 4px}
+.logo{font-size:clamp(16px,2.5vw,25px)}
+.arena{flex:1;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto auto;overflow:hidden}
+.fighters{padding:6px 10px;gap:10px}
+.playercard{font-size:11px}
+canvas{width:100%;height:100%;min-height:0;aspect-ratio:auto;object-fit:contain}
+.actions{padding:7px 10px}
+.actiontitle{margin-bottom:4px}
+.action-hint{padding:5px 8px;margin-bottom:5px}
+.buttons{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.buttons button{min-height:48px;padding:5px 3px;font-size:11px}
+.buttons .icon{font-size:16px;margin-bottom:2px}
+.buttons .detail{font-size:9px}
+.log{min-height:34px;padding:6px 10px;font-size:11px}
+.footer{display:flex;justify-content:space-between;align-items:center;gap:8px;flex:0 0 auto;font-size:10px}
+.setup-overlay{display:none}
+.town-overlay{position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;padding:clamp(8px,2vw,24px);background:radial-gradient(ellipse at 50% 0%,#243c52,#070c14 75%);}
+.town-panel{width:min(1200px,100%);height:min(94dvh,850px);display:grid;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden;border:1px solid #61788d;border-radius:16px;background:linear-gradient(150deg,#172a3d,#0a111c);box-shadow:0 25px 90px #000d}
+.town-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:clamp(12px,2vw,22px);background:linear-gradient(90deg,#243a4c,#101a28);border-bottom:1px solid #4d6478}
+.town-title{font-size:clamp(20px,3vw,34px);font-weight:1000;letter-spacing:2px;color:#f5d18b}.town-title span{color:#8ce4ff}.town-sub{font-size:11px;color:#a9bed0;letter-spacing:2px;margin-top:5px}
+.town-scene{width:100%;height:100%;min-height:0;display:block;aspect-ratio:auto;background:#101d2a}
+.town-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 16px;background:#0b131e;border-top:1px solid #3a5064}
+.town-foot p{margin:0;color:#b2c2d2;font-size:12px;line-height:1.5;max-width:560px}.town-actions{display:flex;gap:8px;flex-wrap:wrap}.town-actions button{min-height:0;padding:12px 16px;font-weight:900;letter-spacing:.5px}.town-primary{background:linear-gradient(#4b876d,#1c4a3a);border-color:#76d5ac}
+@media(max-width:650px){.town-head{align-items:flex-start}.town-foot{padding:8px}.town-foot p{font-size:10px}.town-actions{width:100%}.town-actions button{flex:1;padding:10px 6px;font-size:11px}.setup-panel{padding:12px}.skill-row{gap:5px;padding:7px}.skill-row button{padding:6px 9px}.skill-row small{font-size:10px}}
+.mode-select-overlay,.match-overlay{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:18px;background:radial-gradient(ellipse at 50% 15%,#263b55f5,#050912f7 72%);overflow:auto}
+.mode-select-panel,.match-panel{width:min(900px,100%);border:1px solid #647c9b;border-radius:16px;background:linear-gradient(145deg,#17283b,#090f1a);padding:clamp(18px,3vw,32px);box-shadow:0 25px 90px #000d}
+.mode-select-panel h1{font-size:clamp(24px,4vw,42px);margin:0;color:#f5c56b;letter-spacing:3px}
+.mode-select-panel p,.match-panel p{color:#aebed1;line-height:1.5}
+.mode-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:20px}
+.mode-card{min-height:150px;text-align:left;padding:18px;border-radius:10px;background:linear-gradient(150deg,#253b53,#101a29);border:1px solid #506985;display:flex;flex-direction:column;justify-content:space-between}
+.mode-card .mode-icon{font-size:30px}.mode-card strong{font-size:18px;color:#ffe1a0}.mode-card small{font-size:12px;color:#b8c7d9;line-height:1.45}
+.mode-card:hover{border-color:#f5c56b;box-shadow:0 0 25px #f5c56b22}
+.match-overlay{z-index:110;display:none}.match-panel{text-align:center;width:min(540px,100%)}
+.match-spinner{width:62px;height:62px;border-radius:50%;border:4px solid #263a51;border-top-color:#f5c56b;animation:spin .8s linear infinite;margin:20px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.match-status{font-size:clamp(19px,3vw,28px);font-weight:900;color:#f5d48a;letter-spacing:1px}
+.match-count{display:none;font-size:42px;font-weight:900;color:#fff;margin:8px}
+.fullscreen-btn{min-height:0;padding:6px 10px;font-size:10px}
+@media(orientation:portrait){.app:after{content:'ROTATE YOUR DEVICE TO LANDSCAPE';position:fixed;inset:0;z-index:45;background:#080e18f5;display:flex;align-items:center;justify-content:center;text-align:center;color:#f5d48a;font-weight:900;letter-spacing:2px;font-size:18px;padding:30px;pointer-events:none}.mode-select-overlay,.match-overlay{z-index:55}}
+@media(max-height:520px) and (orientation:landscape){.top{display:none}.fighters{padding:4px 8px}.cardhead{margin-bottom:3px}.hpbar{height:9px}.actions{padding:4px 8px}.buttons button{min-height:40px}.footer{display:none}.log{min-height:27px;padding:4px 8px}}
+@media(max-width:700px){.mode-cards{gap:7px}.mode-card{padding:10px;min-height:125px}.mode-card strong{font-size:14px}.mode-card small{font-size:10px}.mode-icon{font-size:24px}}
+
+
+/* Combat readability and compact landscape controls */
+.arena{min-height:0;min-width:0}
+.fighters{flex:0 0 auto}
+canvas{image-rendering:auto;touch-action:manipulation}
+@media(max-height:620px) and (orientation:landscape){
+  .app{padding:3px;gap:3px}
+  .arena{grid-template-rows:auto minmax(210px,1fr) auto auto}
+  .top{display:none}
+  .footer{display:none}
+  .fighters{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;padding:4px 6px}
+  .fighters>.playercard.player:not(.ally),.fighters>#p2Card,.fighters>.playercard.enemy:not(#e2Card),.fighters>#e2Card{grid-column:auto;grid-row:auto;padding:0 3px;border-left:1px solid #35475e}
+  .cardhead{font-size:9px;margin-bottom:3px;gap:2px}
+  .level{font-size:8px;padding:2px}
+  .hpbar{height:8px;padding:1px}
+  .energybar{height:4px;margin-top:2px}
+  .shieldbar{height:3px;margin-top:2px}
+  .stats{font-size:8px;margin-top:2px;gap:3px}
+  .modebar{display:none}
+  .targetrow{gap:4px;margin:0 0 3px;font-size:9px}
+  .targetbtn{padding:4px 6px;font-size:9px}
+  .actions{padding:4px 6px}
+  .actiontitle{display:none}
+  .action-hint{display:none}
+  .buttons{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+  .buttons button{min-height:42px;padding:3px 2px}
+  .buttons .icon{font-size:14px;margin-bottom:1px}
+  .buttons .btnname{font-size:9px}
+  .buttons .detail{display:none}
+  .log{min-height:25px;padding:4px 8px;font-size:10px;line-height:1.25}
+}
+@media(min-height:621px) and (orientation:landscape){
+  .arena{grid-template-rows:auto minmax(260px,1fr) auto auto}
+  .buttons button{min-height:56px}
+}
+/* High-contrast, oversized combat feedback */
+
+
+/* Persistent gold wallet, compact lobby mode selection and merchant inventory. */
+.header-wallet,.town-header-right,.shop-head-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap;justify-content:flex-end}
+.wallet-pill{display:inline-flex;align-items:center;gap:6px;border:1px solid #8b713d;background:linear-gradient(135deg,#49371b,#211a12);color:#ffe4a2;border-radius:999px;padding:8px 12px;font-size:12px;font-weight:900;letter-spacing:.5px;box-shadow:inset 0 1px #fff2}
+.wallet-pill span{font-variant-numeric:tabular-nums;font-size:14px}
+.town-foot-copy{flex:1 1 260px}.equipped-summary{color:#8fdff0;font-size:11px;font-weight:800;margin-top:7px;letter-spacing:.3px}
+.town-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.town-actions button{min-height:0;padding:10px 11px;font-size:10px;white-space:nowrap}
+.merchant-button{border-color:#b9904f!important;background:linear-gradient(#69502a,#332416)!important;color:#ffe5ad!important}.queue-button{border-color:#4e7793!important;background:linear-gradient(#2b536b,#142d40)!important}
+.shop-overlay{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;padding:clamp(8px,2vw,22px);background:#050912ed;backdrop-filter:blur(8px);overflow:auto}
+.shop-panel{width:min(1120px,100%);max-height:94dvh;display:flex;flex-direction:column;border:1px solid #7b6845;border-radius:15px;background:linear-gradient(145deg,#1a2a3d,#09111c);box-shadow:0 25px 90px #000d;overflow:hidden}
+.shop-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 20px;background:linear-gradient(90deg,#263b4d,#111b28);border-bottom:1px solid #52667a}.close-shop{min-height:0;padding:9px 12px;font-size:10px}
+.shop-tabs{display:flex;gap:8px;padding:12px 16px 0}.shop-tab{min-height:0;padding:10px 14px;font-size:11px;font-weight:900}.shop-tab.active{border-color:#f5c56b;color:#ffe1a0;box-shadow:0 0 14px #f5c56b26}
+.shop-intro{padding:10px 18px;color:#b8c8da;font-size:12px}.shop-grid{padding:0 16px 16px;overflow:auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.shop-item{position:relative;display:grid;grid-template-columns:62px minmax(0,1fr);gap:10px;align-items:center;min-height:118px;padding:12px;border:1px solid #3d5269;border-radius:9px;background:linear-gradient(145deg,#1a2b3e,#0c1521)}
+.shop-item.equipped{border-color:#6ed9b1;box-shadow:inset 0 0 0 1px #6ed9b133}.weapon-preview{height:62px;width:62px;border-radius:8px;background:radial-gradient(circle,#344d61,#111b29 72%);display:grid;place-items:center;font-size:29px;position:relative;overflow:hidden}
+.weapon-preview::after{content:'';position:absolute;inset:8px;border:1px solid var(--weapon-color,#9eb3c7);border-radius:50%;opacity:.65}.weapon-preview span{filter:drop-shadow(0 0 7px var(--weapon-color,#9eb3c7))}
+.shop-item h3{margin:0 0 5px;font-size:13px;color:#f2f5fb}.shop-item p{margin:0 0 7px;font-size:10px;color:#aabbd0;line-height:1.4}.shop-item .item-stats{color:var(--weapon-color,#f5c56b);font-size:11px;font-weight:900;margin-bottom:7px}.shop-item button{min-height:0;width:100%;padding:7px 8px;font-size:10px;font-weight:900}.shop-item button.equip-state{border-color:#438c71;background:linear-gradient(#285b49,#153729);color:#a9f5d5}
+.shop-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 16px;border-top:1px solid #394d62;background:#0b131e;color:#9eb0c5;font-size:10px}.shop-foot button{min-height:0;padding:9px 12px;font-size:10px}
+@media(max-width:760px){.shop-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.town-actions{justify-content:flex-start}.town-actions button{padding:9px 8px}.town-head{align-items:flex-start}.wallet-pill{padding:6px 9px}}
+@media(max-width:480px){.shop-grid{grid-template-columns:1fr}.shop-item{min-height:98px}.shop-head{padding:11px}.shop-tabs{padding:8px 8px 0}.shop-tab{flex:1;padding:9px 5px}.shop-foot{align-items:flex-start;flex-direction:column}.header-wallet{gap:4px}.wallet-pill{font-size:10px;padding:6px 8px}.wallet-pill span{font-size:12px}}
+
+
+
+/* === Vivid fantasy mobile-game skin and responsive battle dock === */
+:root{--gold:#ffdc75;--text:#fff8e4;--muted:#d0dfcf;--panel:#385a3a;--line:#d8b86a}
+html{width:100%;height:100%;background:#173e2b;overscroll-behavior:none}
+body{width:100%;height:100%;min-height:100%;margin:0;overflow:hidden;background:linear-gradient(#83d6ff 0%,#b7eaff 24%,#4da94d 24%,#236d36 100%);font-family:system-ui,Arial,sans-serif;overscroll-behavior:none;touch-action:pan-y}
+.app{width:100%;max-width:none;height:100vh;height:100dvh;min-height:0;padding:clamp(3px,.65vw,9px);gap:clamp(3px,.55vw,7px)}
+.top{margin:0 2px 2px;min-height:32px;text-shadow:0 2px 0 #3b2c1a}
+.logo{color:#fff0b2;text-shadow:0 2px 0 #6c401e,0 4px 0 #382417,0 0 12px #ffdc7580;letter-spacing:1.5px}
+.sub{color:#e1f5d8;text-shadow:0 1px 2px #193e29;letter-spacing:1px}
+.badge,.wallet-pill{border:2px solid #ffe6a0;border-radius:12px;background:linear-gradient(#96602c,#63391e 55%,#492817);color:#fff0b2;box-shadow:inset 0 2px 0 #fff7cc80,0 3px 0 #2b321f,0 5px 8px #07160c80;text-shadow:0 1px #392312}
+.arena{border:4px solid #8e642f;border-radius:14px;background:#398b3e;box-shadow:inset 0 0 0 3px #f4d48a,0 5px 0 #51351e,0 8px 18px #06180e9c;grid-template-rows:auto minmax(0,1fr) auto auto;min-width:0;min-height:0}
+.fighters{background:linear-gradient(#7b5833,#573820);border-bottom:3px solid #d9b76b;padding:clamp(4px,.7vw,9px);gap:clamp(4px,.7vw,10px)}
+.playercard{border:2px solid #d4ad65;border-radius:9px;padding:5px 7px;background:linear-gradient(145deg,#42664b,#254a34);box-shadow:inset 0 2px 0 #d4f1b34d,0 2px 0 #34251b}
+.playercard.ally{border-left:3px solid #4bd3ff;padding-left:6px;background:linear-gradient(145deg,#315f70,#203e49)}
+.playercard.enemy{border-left:3px solid #ff7772;padding-left:6px;background:linear-gradient(145deg,#78413c,#492927)}
+.cardhead{color:#fff5cf;text-shadow:0 1px #332318;font-size:clamp(9px,1.2vw,13px)}
+.level{border:1px solid #f6d98d;border-radius:6px;background:#4a3523;color:#ffe5a0}
+.hpbar,.energybar{border:2px solid #f6d98d;border-radius:999px;background:#28332b;box-shadow:inset 0 2px 3px #0009}
+.hpfill{background:linear-gradient(#ff9d79 0%,#e7443f 50%,#b51f32 100%);border-radius:999px;box-shadow:inset 0 2px 0 #fff6}
+.player .hpfill{background:linear-gradient(#baff8a,#5fd94c 48%,#27933d)}
+.energyfill{background:linear-gradient(#a4f1ff,#35b8f5 50%,#2374d5);border-radius:999px}
+.shieldbar{border:1px solid #b8e9ff;border-radius:999px;background:#263f53;overflow:hidden}
+.stats{color:#f8f3d8;font-size:clamp(8px,.9vw,10px);font-weight:800;text-shadow:0 1px #21301e}
+canvas#arenaHealthvas{width:100%;height:100%;min-height:0;aspect-ratio:auto;display:block;background:#68b64a;touch-action:manipulation}
+.log{min-height:clamp(25px,4.5vh,42px);padding:clamp(4px,.6vw,9px) clamp(7px,1vw,14px);border-top:3px solid #e2bd6e;background:linear-gradient(#78502d,#4b2e1c);color:#fff5d7;font-weight:700;text-shadow:0 1px #2c1a12;overflow:hidden}
+.log strong{color:#ffe38b}
+.actions{padding:clamp(4px,.65vw,9px);background:linear-gradient(#815b35,#54351f);border-top:3px solid #e6c476;min-width:0;min-height:0}
+.actiontitle{color:#ffedb0;text-shadow:0 1px #342216;letter-spacing:1.3px}
+.action-hint{background:linear-gradient(#365b3e,#24452e);border:2px solid #8fc56e;border-radius:8px;color:#f2ffdc}
+.buttons{grid-template-columns:repeat(5,minmax(0,1fr));gap:clamp(3px,.55vw,7px);min-width:0}
+.buttons button,button{border:2px solid #f1d48a;border-radius:11px;background:linear-gradient(#8a9b8b 0%,#566b5a 47%,#354936 48%,#26392b 100%);box-shadow:inset 0 2px 0 #ffffff80,inset 0 -3px 0 #142b1d80,0 3px 0 #1d281b,0 4px 7px #0006;color:#fff9df;text-shadow:0 1px 2px #17251a;font-weight:900;overflow-wrap:anywhere}
+button:hover:not(:disabled){filter:brightness(1.13);border-color:#fff0ae;box-shadow:inset 0 2px 0 #fff9,0 0 0 2px #ffe68c55,0 4px 0 #1d281b}
+button:active:not(:disabled){transform:translateY(2px);box-shadow:inset 0 2px 4px #0005,0 1px 0 #1d281b}
+button:disabled{filter:grayscale(.55);opacity:.48}
+.buttons button{min-height:clamp(35px,7.4vh,61px);padding:clamp(3px,.45vw,7px) 3px}
+.buttons .icon{font-size:clamp(14px,2.4vh,23px);filter:drop-shadow(0 2px 1px #0006)}
+.buttons .btnname{font-size:clamp(9px,1.25vw,13px);line-height:1.05}
+.buttons .detail{font-size:clamp(8px,.9vw,10px);color:#f1e9c9}
+.buttons .special{background:linear-gradient(#e9c16b,#bd8139 47%,#925321 48%,#663717);border-color:#ffe3a0;color:#fff7d6}
+.buttons .defend{background:linear-gradient(#8ed7f4,#4e9dc5 47%,#276a98 48%,#174765);border-color:#c3efff}
+#heal{background:linear-gradient(#b8ef7c,#70c94a 47%,#3b9b38 48%,#22652b);border-color:#e1ffad}
+#shield{background:linear-gradient(#9beaff,#56b6e7 47%,#297dc0 48%,#194c83);border-color:#c8f4ff}
+#power15{background:linear-gradient(#92f5f0,#3ac8c5 47%,#158d9c 48%,#0d596b)}
+#power20{background:linear-gradient(#e0b5ff,#a56ae5 47%,#7840bd 48%,#4a277d)}
+#power30{background:linear-gradient(#ffb1df,#ed66b0 47%,#c32c80 48%,#7f1754)}
+.buttons button.skill-selected{border:3px solid #fff4a8!important;box-shadow:0 0 0 3px #ffdb6370,0 0 22px #ffe16a,inset 0 0 16px #fff6!important}
+.buttons button.skill-selected::after{background:#74461a;border:1px solid #fff0a8;color:#fff4c4}
+.targetrow{gap:5px;color:#fff0c2;font-weight:800}
+.targetbtn{min-height:0;padding:clamp(4px,.5vw,7px) clamp(6px,.7vw,10px);background:linear-gradient(#7794a4,#3d5f70 48%,#294452 49%,#1a303a);border-color:#c5e8ee;border-radius:8px;font-size:clamp(9px,1vw,11px)}
+.targetbtn.active{border-color:#a9f3ff;color:#fff;box-shadow:0 0 0 2px #65d9ff70,0 0 12px #65d9ff70}
+.modebtn.active{background:linear-gradient(#f8d783,#c68a38 48%,#8b5125 49%,#603317);border-color:#fff0a5;color:#fff1be}
+.footer{margin:0;color:#f4e7c4;text-shadow:0 1px #39261b}
+.reset{min-height:0;padding:6px 10px}
+/* Modals and lobby share the same friendly, chunky fantasy-game styling. */
+.town-panel,.shop-panel,.setup-panel,.mode-select-panel,.match-panel{border:3px solid #d7b36b;border-radius:18px;background:linear-gradient(145deg,#52784a,#294b35 55%,#1d382a);box-shadow:inset 0 2px 0 #ffffff45,0 7px 0 #4b321e,0 18px 55px #000b}
+.town-head,.shop-head{background:linear-gradient(#96683b,#624026);border-bottom:3px solid #e6c779}
+.town-title,.mode-select-panel h1{color:#fff0ad;text-shadow:0 2px #5a351c,0 4px #342015;letter-spacing:1.5px}
+.town-sub{color:#e0f3cf}
+.town-foot,.shop-foot{background:linear-gradient(#77502f,#482d1d);border-top:3px solid #dfbc71;color:#f7e9c9}
+.town-scene{background:#68b64a}
+.town-actions button,.shop-item button,.skill-actions button,.start-btn,.mode-card{border-radius:11px}
+.town-primary,.start-btn{background:linear-gradient(#b6f28b,#69c94c 48%,#3d9c38 49%,#286a2b);border-color:#e4ffb7;color:#faffed}
+.merchant-button{background:linear-gradient(#ffe18c,#dca445 48%,#9d6228 49%,#71401e)!important;border-color:#fff0b2!important;color:#fff7d8!important}
+.queue-button{background:linear-gradient(#8de3ff,#44acd8 48%,#2877a5 49%,#174d71)!important;border-color:#c6f2ff!important}
+.mode-card{background:linear-gradient(#78a96a,#3d7148 48%,#285135 49%,#1b3928);border:2px solid #e2c579;box-shadow:inset 0 2px 0 #ffffff4a,0 4px 0 #1c2c1b}
+.mode-card strong{color:#fff0ad;text-shadow:0 1px #392817}
+.mode-card small{color:#e1f1d6}
+.shop-item{border:2px solid #c7a65f;border-radius:12px;background:linear-gradient(#446749,#274630);box-shadow:inset 0 2px 0 #ffffff26}
+.weapon-preview{border:2px solid #d9b96d;border-radius:10px;background:radial-gradient(circle,#9bbf7b,#35543a 72%)}
+.skill-row{border:2px solid #c4a45e;border-radius:9px;background:linear-gradient(#466b49,#2b4c34);box-shadow:inset 0 1px 0 #fff3}
+.skill-row strong{color:#fff0c0}.skill-row small{color:#d4e7ce}.skill-level{color:#ffe39a}
+.setup-overlay{z-index:120;padding:clamp(5px,1vw,14px)}
+.setup-panel{max-height:calc(100dvh - 12px);overflow:auto;overscroll-behavior:contain}
+/* Use the full viewport for combat. On short landscape phones, never force a
+   210px minimum canvas: all ten abilities remain visible in a two-row dock. */
+@media (orientation:landscape){
+ html,body{height:100%;height:100dvh;overflow:hidden}
+ .app{height:100%;height:100dvh;padding:clamp(2px,.4vw,6px);gap:3px}
+ .arena{flex:1 1 auto;grid-template-rows:auto minmax(0,1fr) auto auto;overflow:hidden}
+ .fighters{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;padding:4px}
+ .fighters>.playercard.player:not(.ally),.fighters>#p2Card,.fighters>.playercard.enemy:not(#e2Card),.fighters>#e2Card{grid-column:auto;grid-row:auto;padding:4px;min-width:0}
+ .cardhead{margin:0 0 3px;gap:2px;font-size:clamp(8px,1.5vh,11px)}
+ .hpbar{height:clamp(7px,1.8vh,11px);padding:1px}.energybar{height:clamp(4px,1vh,6px);margin-top:2px}.shieldbar{height:3px;margin-top:2px}
+ .stats{margin-top:2px;font-size:clamp(7px,1.25vh,9px);gap:2px}
+ .actions{padding:4px 6px;overflow:visible}
+ .modebar,.actiontitle,.action-hint{display:none}
+ .targetrow{margin:0 0 4px;flex-wrap:nowrap;overflow-x:auto;white-space:nowrap;scrollbar-width:none;min-height:24px}
+ .targetrow::-webkit-scrollbar{display:none}
+ .buttons{grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:4px}
+ .buttons button{min-width:0;min-height:clamp(29px,7.5vh,47px);height:auto;padding:2px 1px}
+ .buttons .icon{font-size:clamp(12px,2.1vh,18px);margin-bottom:1px}
+ .buttons .btnname{font-size:clamp(8px,1.45vh,11px);line-height:1.05}
+ .buttons .detail{display:none}
+ .log{min-height:clamp(22px,4vh,31px);max-height:clamp(22px,4vh,31px);padding:4px 8px;font-size:clamp(9px,1.5vh,11px);line-height:1.2;white-space:nowrap;text-overflow:ellipsis}
+ .top{flex:0 0 auto;min-height:25px}.logo{font-size:clamp(13px,2.8vh,19px)}.sub{display:none}.footer{display:none}
+}
+@media (max-height:430px) and (orientation:landscape){
+ .top{display:none}
+ .fighters{padding:2px 3px;gap:3px}
+ .playercard{padding:2px!important}
+ .cardhead{font-size:8px;margin-bottom:2px}
+ .level{font-size:7px;padding:1px 3px}
+ .stats{font-size:7px}
+ .buttons button{min-height:27px}
+ .targetrow{min-height:20px;margin-bottom:2px}
+ .log{display:none}
+}
+@media (orientation:portrait){
+ .app:after{z-index:115;letter-spacing:1px;font-size:clamp(15px,4vw,20px);background:linear-gradient(145deg,#244b35f7,#0d2519f7);text-shadow:0 2px #000}
+ .setup-overlay{z-index:120}
+ .setup-panel{width:min(650px,100%)}
+ .skill-list{gap:5px}
+ .skill-row{padding:7px;grid-template-columns:minmax(0,1fr) auto auto auto;gap:5px}
+ .skill-row button{min-height:32px;padding:5px 9px}
+ .shop-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:520px) and (orientation:portrait){.shop-grid{grid-template-columns:1fr}.town-actions button{font-size:10px}}
+@media(prefers-reduced-motion:reduce){button,.buttons button.skill-selected{transition:none;animation:none}}
+
+
+/* FINAL ARENA FIT: use the complete available width and all space between HUD and skill dock. */
+html, body { width:100%; height:100%; height:100dvh; margin:0; overflow:hidden; }
+body { display:block; }
+.app { width:100vw; max-width:none; height:100vh; height:100dvh; min-height:0; margin:0; padding:clamp(2px,.35vw,5px); gap:clamp(2px,.35vw,5px); }
+.arena { width:100%; max-width:none; flex:1 1 auto; min-width:0; min-height:0; grid-template-columns:minmax(0,1fr); grid-template-rows:auto minmax(0,1fr) auto auto; }
+#arenaHealthvas { grid-column:1 / -1; justify-self:stretch; align-self:stretch; display:block; width:100% !important; max-width:none !important; min-width:0; height:100% !important; min-height:0; aspect-ratio:auto !important; object-fit:fill; }
+.fighters, .actions, .log { width:100%; min-width:0; }
+@media (orientation:landscape) {
+ .app { padding:2px; gap:2px; }
+ .arena { grid-template-rows:auto minmax(0,1fr) auto auto; }
+ #arenaHealthvas { width:100% !important; height:100% !important; }
+ .actions { padding:3px 5px; }
+ .buttons { width:100%; grid-template-columns:repeat(5,minmax(0,1fr)); grid-template-rows:repeat(2,minmax(0,1fr)); }
+}
+
+</style>
+
+<style id="advanced-skill-ui">
+/* Square, individually colored skill tiles with in-button mana and expected damage. */
+.buttons{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:6px!important}
+.buttons button{aspect-ratio:1/1!important;min-height:0!important;max-height:112px!important;border-radius:13px!important;display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:3px;position:relative;overflow:hidden;padding:6px!important;border:2px solid #ffffff60!important;box-shadow:inset 0 2px #ffffff55,0 4px 0 #0005,0 7px 12px #0004!important}
+.buttons button .icon{display:grid;place-items:center;width:32px;height:32px;font-size:0!important;border-radius:9px;background:#ffffff22;flex:0 0 auto}
+.buttons button .icon svg{width:26px;height:26px;display:block;filter:drop-shadow(0 1px 1px #0008)}
+.buttons button .btnname{font-size:clamp(9px,1.1vw,12px)!important;font-weight:900;line-height:1.05;text-align:center}
+.buttons button .detail{display:block!important;font-size:clamp(8px,.8vw,10px)!important;line-height:1.05;text-align:center;opacity:.95;white-space:normal!important}
+#attack{background:linear-gradient(145deg,#66865a,#254832)!important}#heavy{background:linear-gradient(145deg,#a89b66,#62512b)!important}#special{background:linear-gradient(145deg,#e7b16a,#82451d)!important}#bazooka{background:linear-gradient(145deg,#ed8764,#7a2925)!important}#defend{background:linear-gradient(145deg,#6bd4f4,#155b87)!important}#heal{background:linear-gradient(145deg,#78df9a,#17613d)!important}#shield{background:linear-gradient(145deg,#82d9f3,#21639a)!important}#power15{background:linear-gradient(145deg,#4be0cf,#126d78)!important}#power20{background:linear-gradient(145deg,#c28af6,#57309a)!important}#power30{background:linear-gradient(145deg,#ff85cb,#8d205e)!important}
+.buttons button.turn-hidden{opacity:.1!important;pointer-events:none!important;filter:grayscale(.7)!important}
+.fighter-level{cursor:pointer;user-select:none}.fighter-level:hover{filter:brightness(1.3);text-decoration:underline}
+#fighterInfo{position:fixed;z-index:500;display:none;min-width:240px;max-width:min(340px,90vw);padding:14px;background:#132033f5;color:#f3f6ff;border:2px solid #e8c675;border-radius:12px;box-shadow:0 12px 40px #000a;font-size:13px}
+#fighterInfo h3{margin:0 0 8px;color:#ffd57c}#fighterInfo ul{padding-left:18px;margin:5px 0}#fighterInfo button{margin-top:8px;padding:7px 12px;border-radius:8px;border:1px solid #ffe1a0;background:#3b4c5d;color:white}
+@media(orientation:portrait){.buttons{grid-template-columns:repeat(3,minmax(0,1fr))!important}.buttons button{max-height:95px!important}.buttons button .detail{font-size:8px!important}}
+@media(max-height:460px) and (orientation:landscape){.buttons button{aspect-ratio:auto!important;min-height:48px!important;max-height:62px!important}.buttons button .icon{width:22px;height:22px}.buttons button .icon svg{width:19px;height:19px}.buttons button .detail{font-size:8px!important}}
+</style>
+
+<style id="cyberpunk-fullscreen-rework">
+:root{--bg:#050914;--panel:#0b1424;--line:#25465c;--gold:#35e5f1;--text:#e8fbff;--muted:#9bb9cf}
+html,body{width:100%;height:100%;height:100dvh;margin:0;overflow:hidden;background:#050914}
+body{display:block!important;background:radial-gradient(ellipse at 50% 0%,#142d49 0%,#070d1a 58%,#03060d 100%)!important;color:#e8fbff}
+.app{width:100vw!important;max-width:none!important;height:100vh!important;height:100dvh!important;min-height:0!important;margin:0!important;padding:clamp(2px,.35vw,5px)!important;display:flex!important;flex-direction:column!important;gap:clamp(2px,.35vw,5px)!important}
+.top{flex:0 0 auto;margin:0!important;padding:3px 8px;min-height:30px;border:1px solid #24536c;background:linear-gradient(90deg,#0b182b,#10263b 55%,#170f2a);box-shadow:inset 0 1px #54f3ff35,0 3px 12px #0008;border-radius:7px}
+.logo span{color:#35e5f1;text-shadow:0 0 12px #35e5f188}.sub{color:#83afc7}.badge,.wallet-pill{border:1px solid #35dbe8!important;border-radius:4px!important;background:linear-gradient(#15364b,#0b192a)!important;color:#dffcff!important;box-shadow:inset 0 0 10px #27d9f22b}
+.arena{flex:1 1 0!important;width:100%!important;max-width:none!important;min-width:0!important;min-height:0!important;display:grid!important;grid-template-columns:minmax(0,1fr)!important;grid-template-rows:auto minmax(0,1fr) auto auto!important;overflow:hidden!important;border:1px solid #2ce5f2!important;border-radius:5px!important;background:#050b15!important;box-shadow:0 0 0 1px #ed3da944,inset 0 0 24px #23cde31c,0 0 24px #000b!important}
+.fighters{flex:0 0 auto;display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:4px!important;padding:4px!important;background:linear-gradient(90deg,#081626,#10152a,#1b1029)!important;border-bottom:1px solid #2ce5f2!important}
+.playercard{min-width:0!important;padding:4px 5px!important;border:1px solid #294c66!important;border-left:2px solid #35e5f1!important;border-radius:4px!important;background:linear-gradient(145deg,#10253a,#091321)!important;box-shadow:inset 0 1px #8ef8ff1c!important;color:#e8fbff!important}
+.playercard.enemy{border-left-color:#ed3da9!important;background:linear-gradient(145deg,#2a1832,#120f20)!important}.playercard.ally{border-left-color:#35e5f1!important}
+.cardhead,.stats{color:#d8f7ff!important}.level{background:#101d30!important;border:1px solid #35e5f1!important;color:#aafaff!important;border-radius:3px!important}.hpbar,.energybar,.shieldbar{background:#040913!important;border:1px solid #2a4c60!important;border-radius:2px!important}.hpfill{background:linear-gradient(90deg,#f04479,#ff7e80)!important}.energyfill{background:linear-gradient(90deg,#2b91ff,#37f0ed)!important}.shieldfill{background:linear-gradient(90deg,#5d77ff,#a18bff)!important}
+#arenaHealthvas{display:block!important;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;max-width:none!important;max-height:none!important;aspect-ratio:auto!important;object-fit:fill!important;background:#081323!important;touch-action:manipulation}
+.log{margin:0!important;min-width:0!important;border-top:1px solid #2ce5f2!important;border-bottom:1px solid #ed3da9!important;background:linear-gradient(90deg,#081526,#11172b)!important;color:#c5f9ff!important;padding:5px 9px!important;font-size:clamp(9px,1.15vw,12px)!important}
+.actions{min-width:0!important;padding:clamp(3px,.55vw,8px)!important;background:linear-gradient(180deg,#0b1424,#080d18)!important;border-top:1px solid #233e59!important}
+.modebar,.targetrow{color:#a9c9da!important}.modebtn,.targetbtn,.reset,.layout-toggle{border:1px solid #35dce9!important;border-radius:4px!important;background:linear-gradient(180deg,#17354b,#0b192a)!important;color:#dffcff!important;box-shadow:inset 0 1px #b4ffff28,0 2px 0 #030711!important}.modebtn.active,.targetbtn.active{border-color:#ed3da9!important;background:linear-gradient(#4a1d49,#1b1830)!important;color:#fff!important;box-shadow:0 0 12px #ed3da944!important}
+.actiontitle{color:#35e5f1!important;letter-spacing:1.6px!important}.action-hint{color:#91b4c9!important}
+.buttons{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:clamp(3px,.5vw,7px)!important;width:100%!important;min-width:0!important}
+.buttons button{aspect-ratio:1/1!important;min-width:0!important;min-height:0!important;max-height:clamp(52px,10.5vh,106px)!important;border:1px solid #7af7ffb8!important;border-radius:5px!important;background:linear-gradient(145deg,#15364c,#0b1729)!important;color:#eaffff!important;box-shadow:inset 0 1px #d7ffff3b,0 3px 0 #030610,0 0 12px #1dd8f01c!important;text-shadow:0 1px #000;overflow:hidden}
+.buttons button:before{content:"";position:absolute;inset:4px;border:1px solid #ffffff1b;pointer-events:none}.buttons button .icon{background:#07132180!important;border:1px solid #54e9f255!important;border-radius:4px!important}.buttons button .btnname{color:#e9fdff!important}.buttons button .detail{color:#9feef6!important}
+#attack{background:linear-gradient(145deg,#1e586a,#102031)!important}#heavy{background:linear-gradient(145deg,#5a2c72,#211633)!important}#special{background:linear-gradient(145deg,#8a4c24,#2b1a1b)!important}#bazooka{background:linear-gradient(145deg,#80305e,#27152a)!important}#defend{background:linear-gradient(145deg,#1a5e8b,#0b1e37)!important}#heal{background:linear-gradient(145deg,#176b63,#0a292d)!important}#shield{background:linear-gradient(145deg,#304c9c,#101b3c)!important}#power15{background:linear-gradient(145deg,#087b87,#092b3d)!important}#power20{background:linear-gradient(145deg,#5b399d,#21183d)!important}#power30{background:linear-gradient(145deg,#a12870,#37142f)!important}
+.buttons button.skill-selected{border:2px solid #fff!important;box-shadow:0 0 0 2px #35e5f1,0 0 20px #35e5f1a8!important}
+.footer{background:#081322!important;border-top:1px solid #24485e!important}.town-panel,.shop-panel,.mode-select-panel,.setup-panel{background:linear-gradient(145deg,#0c1a2b,#111328)!important;border:1px solid #2ce5f2!important;color:#e8fbff!important;box-shadow:0 0 24px #000b,0 0 16px #2ce5f21a!important}.town-head,.town-foot,.shop-head,.shop-foot{background:#0a1525!important;border-color:#2b5268!important}.town-title,.shop-head .town-title{color:#e8fbff!important}.town-title span{color:#35e5f1!important}.town-scene{background:#071323!important}.town-actions button,.shop-item button,.skill-actions button,.start-btn,.mode-card,.close-shop{border-radius:4px!important;border:1px solid #35dce9!important;background:linear-gradient(#17415a,#0b1b2d)!important;color:#eaffff!important}.shop-item,.mode-card,.skill-row{border:1px solid #2b566c!important;background:linear-gradient(145deg,#10263a,#0b1423)!important;color:#e8fbff!important}.skill-row strong{color:#dffcff!important}.skill-row small{color:#9bb9cf!important}.skill-level{color:#35e5f1!important}
+.layout-toggle{top:5px!important;right:5px!important;z-index:1500!important;font-size:9px!important;padding:5px 7px!important;min-height:25px!important}
+.app:after{display:none!important;content:none!important}
+@media(orientation:portrait){.fighters{grid-template-columns:repeat(2,minmax(0,1fr))!important}.arena{grid-template-rows:auto minmax(0,1fr) auto auto!important}.buttons{grid-template-columns:repeat(3,minmax(0,1fr))!important}.buttons button{aspect-ratio:1.25/1!important;max-height:76px!important}.buttons button .detail{font-size:8px!important}.top{padding-right:110px}.log{white-space:normal!important;max-height:44px;overflow:auto}}
+@media(orientation:landscape){.app{padding:2px!important;gap:2px!important}.arena{grid-template-rows:auto minmax(0,1fr) auto auto!important}.fighters{grid-template-columns:repeat(6,minmax(0,1fr))!important}.buttons{grid-template-columns:repeat(5,minmax(0,1fr))!important;grid-template-rows:repeat(2,minmax(0,1fr))!important}.buttons button{aspect-ratio:1.45/1!important;max-height:clamp(38px,9.5vh,82px)!important}.buttons button .detail{display:block!important;font-size:clamp(7px,.75vw,10px)!important}.actions{padding:3px 5px!important}.modebar,.actiontitle,.action-hint{display:none}}
+@media(max-height:430px) and (orientation:landscape){.top{display:none}.fighters{padding:2px!important}.buttons button{max-height:40px!important}.log{display:none}}
+</style>
+
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div><div class="logo">EPIC <span>DUEL</span></div><div class="sub">TURN-BASED COMBAT PROTOTYPE</div></div>
+    <div class="header-wallet"><div class="wallet-pill">🪙 <span id="goldAmount">500</span> GOLD</div><div class="badge" id="modeBadge">2 VS 2 · TEAM BATTLE</div></div>
+  </div>
+  <div class="arena">
+    <div class="fighters">
+      <div class="playercard player">
+        <div class="cardhead"><span>YOU · DUELIST</span><span class="level fighter-level" data-fighter="p">LVL 30</span></div>
+        <div class="hpbar"><div id="pHP" class="hpfill" style="width:100%"></div></div>
+        <div class="energybar"><div id="pEN" class="energyfill" style="width:100%"></div></div>
+        <div class="shieldbar"><div id="pSH" class="shieldfill"></div></div><div class="stats"><span id="pHPtext">100 / 100 HP</span><span id="pENtext">50 / 50 EN</span></div>
+      </div>
+      <div id="p2Card" class="playercard player ally">
+        <div class="cardhead"><span>ALLY · BOT</span><span class="level fighter-level" data-fighter="p2">LVL 12</span></div>
+        <div class="hpbar"><div id="p2HP" class="hpfill" style="width:100%"></div></div>
+        <div class="energybar"><div id="p2EN" class="energyfill" style="width:100%"></div></div>
+        <div class="shieldbar"><div id="p2SH" class="shieldfill"></div></div><div class="stats"><span id="p2HPtext">100 / 100 HP</span><span id="p2ENtext">50 / 50 EN</span></div>
+      </div>
+      <div class="playercard enemy">
+        <div class="cardhead"><span>RIVAL · BOT</span><span class="level fighter-level" data-fighter="e">LVL 12</span></div>
+        <div class="hpbar"><div id="eHP" class="hpfill" style="width:100%"></div></div>
+        <div class="energybar"><div id="eEN" class="energyfill" style="width:100%"></div></div>
+        <div class="shieldbar"><div id="eSH" class="shieldfill"></div></div><div class="stats"><span id="eHPtext">100 / 100 HP</span><span id="eENtext">50 / 50 EN</span></div>
+      </div>
+      <div id="e2Card" class="playercard enemy">
+        <div class="cardhead"><span>RIVAL 2 · BOT</span><span class="level fighter-level" data-fighter="e2">LVL 12</span></div>
+        <div class="hpbar"><div id="e2HP" class="hpfill" style="width:100%"></div></div>
+        <div class="energybar"><div id="e2EN" class="energyfill" style="width:100%"></div></div>
+        <div class="shieldbar"><div id="e2SH" class="shieldfill"></div></div><div class="stats"><span id="e2HPtext">100 / 100 HP</span><span id="e2ENtext">50 / 50 EN</span></div>
+      </div>
+    <div id="p3Card" class="playercard player ally" style="display:none"><div class="cardhead"><span id="p3Name" class="fighter-name">ALLY 2 · BOT</span><span class="level fighter-level" data-fighter="p3">LVL 12</span></div><div class="hpbar"><div id="p3HP" class="hpfill" style="width:100%"></div></div><div class="energybar"><div id="p3EN" class="energyfill" style="width:100%"></div></div><div class="shieldbar"><div id="p3SH" class="shieldfill"></div></div><div class="stats"><span id="p3HPtext">100 / 100 HP</span><span id="p3ENtext">100 / 100 MP</span></div></div>
+    <div id="e3Card" class="playercard enemy" style="display:none"><div class="cardhead"><span id="e3Name" class="fighter-name">RIVAL 3 · BOT</span><span class="level fighter-level" data-fighter="e3">LVL 12</span></div><div class="hpbar"><div id="e3HP" class="hpfill" style="width:100%"></div></div><div class="energybar"><div id="e3EN" class="energyfill" style="width:100%"></div></div><div class="shieldbar"><div id="e3SH" class="shieldfill"></div></div><div class="stats"><span id="e3HPtext">100 / 100 HP</span><span id="e3ENtext">100 / 100 MP</span></div></div>
+    </div>
+    <canvas id="arenaHealthvas" width="900" height="440"></canvas>
+    <div id="log" class="log"><strong>DUEL START</strong> — Choose an action. Swords require close range; pistols and bazookas fire from a distance. Equipment attacks cost no energy.</div>
+    <div class="actions">
+      <div class="modebar" aria-label="Game mode">
+        <button id="mode1" class="modebtn">1 VS 1</button>
+        <button id="mode2" class="modebtn active">2 VS 2 TEAM BATTLE</button><button id="modeJ" class="modebtn">JUGGERNAUT</button>
+        <span class="detail">Your ally fights automatically · Choose a target · Damage ±10%</span>
+      </div>
+      <div class="targetrow" id="targetRow"><strong>TARGET:</strong><button class="targetbtn active" id="targetE">Rival 1</button><button class="targetbtn" id="targetE2">Rival 2</button><button class="targetbtn" id="targetE3" style="display:none">Rival 3</button><strong style="margin-left:8px">SUPPORT:</strong><button class="targetbtn active" id="supportP">Self</button><button class="targetbtn" id="supportP2">Ally</button><button class="targetbtn" id="supportP3" style="display:none">Ally 2</button><span id="teamStatus">2 teams · 4 fighters</span></div>
+      <div class="actiontitle">CHOOSE ACTION</div><div id="actionHint" class="action-hint">Choose an action, then click your target.</div>
+      <div class="buttons">
+        <button id="attack"><span class="icon">⚔</span><span class="btnname">Sword Strike</span><span class="detail">0 MP · ~10 dmg</span></button>
+        <button id="heavy"><span class="icon">✦</span><span class="btnname">Heavy Sword</span><span class="detail">16 MP · ~15 dmg</span></button>
+        <button id="special" class="special"><span class="icon">🔫</span><span class="btnname">Pistol</span><span class="detail">Draw from holster · 2.5% miss chance · Every 2 turns · 0 energy</span></button>
+        <button id="bazooka" class="special"><span class="icon">🚀</span><span class="btnname">Bazooka</span><span class="detail">Draw from back · 1.7% miss chance · Every 3 turns · 0 energy</span></button>
+        <button id="defend" class="defend"><span class="icon">⬡</span><span class="btnname">Defend</span><span class="detail">0 MP · reduce damage</span></button>
+        <button id="heal" class="special"><span class="icon">✚</span><span class="btnname">Heal</span><span class="detail">0 MP · restore HP</span></button>
+        <button id="shield" class="defend"><span class="icon">🛡</span><span class="btnname">Shield</span><span class="detail">0 MP · gain shield</span></button>
+        <button id="power15" class="special"><span class="icon">✧</span><span class="btnname">Arc Bolt</span><span class="detail">15 mana · +50% damage</span></button>
+        <button id="power20" class="special"><span class="icon">⚡</span><span class="btnname">Plasma Burst</span><span class="detail">20 mana · +75% damage</span></button>
+        <button id="power30" class="special"><span class="icon">☄</span><span class="btnname">Nova Strike</span><span class="detail">30 mana · +110% damage · hits all rivals</span></button>
+      </div>
+    </div>
+  </div>
+  <div class="footer"><span>Turn-based combat · Landscape arena</span><button id="restart" class="reset">↻ NEW MATCH</button></div>
+</div>
+<div class="town-overlay" id="townOverlay" style="display:flex">
+ <section class="town-panel">
+  <header class="town-head"><div><div class="town-title">DUELIST <span>TOWN HALL</span></div><div class="town-sub">THE CROSSROADS · SOCIAL HUB</div></div><div class="town-header-right"><div class="wallet-pill">🪙 <span id="townGoldAmount">500</span> GOLD</div><div class="badge">SAFE ZONE</div></div></header>
+  <canvas id="townCanvas" class="town-scene" width="1200" height="650" aria-label="Animated Town Hall lobby"></canvas>
+  <footer class="town-foot"><div class="town-foot-copy"><p id="lobbyNotice">Your hero is waiting in the Town Hall. Visit the merchant, improve your build, or choose a battle mode below.</p><div class="equipped-summary" id="equippedSummary">⚔ Basic Blade · 🔫 Basic Pistol · 🚀 Basic Launcher</div></div><div class="town-actions"><button id="townBuild" class="town-primary">⚙ CHARACTER BUILD</button><button id="townMerchant" class="merchant-button">🛒 MERCHANT</button><button id="townMode1" class="queue-button">⚔ 1 VS 1</button><button id="townMode2" class="queue-button">🛡 2 VS 2</button><button id="townModeJ" class="queue-button">👑 JUGGERNAUT</button><button id="townMode3" class="queue-button">⚔ 3 VS 3</button><button id="townOnline" class="queue-button">🌐 ONLINE ROOM</button></div></footer>
+ </section>
+</div>
+<div class="shop-overlay" id="shopOverlay" style="display:none" aria-modal="true" role="dialog">
+ <section class="shop-panel"><header class="shop-head"><div><div class="town-title">THE <span>IRON MERCHANT</span></div><div class="town-sub">WEAPONS · FORGED FOR THE ARENA</div></div><div class="shop-head-actions"><div class="wallet-pill">🪙 <span id="shopGoldAmount">500</span> GOLD</div><button id="closeShop" class="close-shop">✕ CLOSE</button></div></header>
+  <div class="shop-tabs"><button class="shop-tab active" data-shop-tab="sword">⚔ SWORDS</button><button class="shop-tab" data-shop-tab="pistol">🔫 PISTOLS</button><button class="shop-tab" data-shop-tab="bazooka">🚀 BAZOOKAS</button></div>
+  <div class="shop-intro" id="shopIntro">Choose a blade. Higher tiers increase damage and change its appearance.</div>
+  <div class="shop-grid" id="shopGrid"></div>
+  <footer class="shop-foot"><span>Purchased gear is equipped immediately and saved on this device.</span><button id="shopBackToLobby">RETURN TO TOWN HALL</button></footer>
+ </section>
+</div>
+<div class="mode-select-overlay" id="modeSelectOverlay" style="display:none">
+ <section class="mode-select-panel">
+  <div class="sub">ONLINE-STYLE MATCHMAKING · TURN-BASED COMBAT</div>
+  <h1>CHOOSE YOUR BATTLE</h1>
+  <p>Select a mode. Matchmaking takes a random 3–6 seconds before the battle setup opens. This offline prototype matches you with AI-controlled rivals.</p>
+  <div class="mode-cards">
+   <button class="mode-card" data-mode="1v1"><span class="mode-icon">⚔️</span><strong>1 VS 1 DUEL</strong><small>One fighter against one rival. Pure tactical combat.</small></button>
+   <button class="mode-card" data-mode="2v2"><span class="mode-icon">🛡️</span><strong>2 VS 2 TEAM BATTLE</strong><small>Fight alongside an AI ally against two rivals.</small></button>
+   <button class="mode-card" data-mode="juggernaut"><span class="mode-icon">👑</span><strong>JUGGERNAUT</strong><small>One champion against two rivals. Their combined skill budget is capped at 150% of yours.</small></button>
+   <button class="mode-card" data-mode="3v3"><span class="mode-icon">⚔️</span><strong>3 VS 3 SQUAD BATTLE</strong><small>Three fighters on each side. Your two AI teammates fight automatically.</small></button>
+  </div>
+  <p><button id="fullscreenBtn" class="fullscreen-btn">⛶ ENTER FULLSCREEN</button></p>
+ </section>
+</div>
+<div class="match-overlay" id="matchOverlay" role="status" aria-live="polite"><section class="match-panel"><div class="sub">ARENA NETWORK</div><div class="match-spinner"></div><div class="match-status" id="matchStatus">SEARCHING FOR OPPONENTS</div><div class="match-count" id="matchCount">3</div><p id="matchDetails">Finding a suitable match…</p></section></div>
+<div class="setup-overlay" id="setupOverlay">
+ <section class="setup-panel" aria-label="Skill points">
+  <h2>DUELIST CONFIGURATION</h2>
+  <p>Before battle, distribute your <b>30 skill points</b>. Each point improves a permanent character stat. Use + and − to fine-tune your build. Base mana is 100; each Max Mana point adds +5.</p>
+  <div class="points-left">Points remaining: <span id="pointsLeft">30</span> / 30</div>
+  <div class="skill-list" id="skillList">
+   <div class="skill-row" data-skill="damage"><div><strong>Base Damage</strong><small>Each point adds +2 damage to your basic attack.</small></div><span class="skill-level" id="lvl-damage">0</span><button data-add="damage" aria-label="Increase damage">＋</button><button data-remove="damage" aria-label="Decrease damage">−</button></div>
+   <div class="skill-row" data-skill="health"><div><strong>Health</strong><small>Each point adds +5 maximum health.</small></div><span class="skill-level" id="lvl-health">0</span><button data-add="health" aria-label="Increase health">＋</button><button data-remove="health" aria-label="Decrease health">−</button></div>
+   <div class="skill-row" data-skill="shield"><div><strong>Shield</strong><small>Each point adds +5 starting shield and +3 to the shield ability.</small></div><span class="skill-level" id="lvl-shield">0</span><button data-add="shield" aria-label="Increase shield">＋</button><button data-remove="shield" aria-label="Decrease shield">−</button></div>
+   <div class="skill-row" data-skill="lifesteal"><div><strong>Lifesteal</strong><small>Recover 3% of damage dealt per point.</small></div><span class="skill-level" id="lvl-lifesteal">0</span><button data-add="lifesteal" aria-label="Increase lifesteal">＋</button><button data-remove="lifesteal" aria-label="Decrease lifesteal">−</button></div>
+   <div class="skill-row" data-skill="mana"><div><strong>Max Mana</strong><small>Each point adds +5 maximum mana (starts at 100).</small></div><span class="skill-level" id="lvl-mana">0</span><button data-add="mana" aria-label="Increase mana">＋</button><button data-remove="mana" aria-label="Decrease mana">−</button></div>
+   <div class="skill-row" data-skill="defense"><div><strong>Defense</strong><small>Each point reduces incoming damage by 2%.</small></div><span class="skill-level" id="lvl-defense">0</span><button data-add="defense" aria-label="Increase defense">＋</button><button data-remove="defense" aria-label="Decrease defense">−</button></div>
+  </div>
+  <div class="skill-actions"><button id="resetSkills">Reset points</button><button id="autoSkills">Auto-allocate</button></div>
+  <button id="startBattle" class="start-btn">START BATTLE</button>
+ </section>
+</div>
+<div id="fighterInfo" role="dialog" aria-live="polite"></div>
+<script>
+(()=>{
+const canvas=document.getElementById('arenaHealthvas'),ctx=canvas.getContext('2d');
+const townCanvas=document.getElementById('townCanvas'),townCtx=townCanvas.getContext('2d');
+const ui={
+pHP:document.getElementById('pHP'),eHP:document.getElementById('eHP'),pEN:document.getElementById('pEN'),eEN:document.getElementById('eEN'),p2HP:document.getElementById('p2HP'),e2HP:document.getElementById('e2HP'),p3HP:document.getElementById('p3HP'),e3HP:document.getElementById('e3HP'),p2EN:document.getElementById('p2EN'),e2EN:document.getElementById('e2EN'),p3EN:document.getElementById('p3EN'),e3EN:document.getElementById('e3EN'),pSH:document.getElementById('pSH'),p2SH:document.getElementById('p2SH'),eSH:document.getElementById('eSH'),e2SH:document.getElementById('e2SH'),p3SH:document.getElementById('p3SH'),e3SH:document.getElementById('e3SH'),
+pHPtext:document.getElementById('pHPtext'),eHPtext:document.getElementById('eHPtext'),pENtext:document.getElementById('pENtext'),eENtext:document.getElementById('eENtext'),p2HPtext:document.getElementById('p2HPtext'),e2HPtext:document.getElementById('e2HPtext'),p3HPtext:document.getElementById('p3HPtext'),e3HPtext:document.getElementById('e3HPtext'),p2ENtext:document.getElementById('p2ENtext'),e2ENtext:document.getElementById('e2ENtext'),p3ENtext:document.getElementById('p3ENtext'),e3ENtext:document.getElementById('e3ENtext'),log:document.getElementById('log')
+}
+;
+let p,e,p2,e2,p3,e3,mode='2v2',targetKey='e',supportKey='p',turnBusy=false,over=false,fx=[],last=performance.now(),elapsed=0,combatMoves=[],playerTurn=0,enemyTurnCount=0,playerGunReady=0,playerBazookaReady=0,enemyGunReady=0,enemyBazookaReady=0,pendingKind=null,matchEnded=false;
+const skillPoints={damage:0,health:0,shield:0,lifesteal:0,mana:0,defense:0};
+const skillNames=['damage','health','shield','lifesteal','mana','defense'];
+const weaponTiers=[15,35,55,75,95,115,135,155,180,200];
+const weaponNames={sword:['Copper Edge','Ranger Blade','Duelist Fang','Storm Cutter','Warden Saber','Crimson Edge','Moonsteel Blade','Void Reaver','Dragonfang','Titan Cleaver'],pistol:['Street Pistol','Ranger Sidearm','Viper Handgun','Arc Revolver','Storm Pistol','Crimson Magnum','Moonshot','Void Handcannon','Dragonfire Pistol','Titan Breaker'],bazooka:['Scrap Launcher','Ranger Rocket Tube','Blast Caster','Siege Launcher','Storm Howitzer','Crimson Annihilator','Moonfall Cannon','Void Mortar','Dragonfire Launcher','Titan Obliterator']};
+const weaponColors={sword:['#c4cbd4','#62d8c4','#7bc6ff','#a7a4ff','#f4cb75','#ff827c','#a7f0e8','#d68cff','#ff9d54','#fff0a6'],pistol:['#aab7c5','#61d8d0','#7ec4ff','#a7a0ff','#f5c66d','#ff797e','#8df1e3','#cf87ff','#ff9c54','#fff0a6'],bazooka:['#9eacbb','#63d9c4','#7bc5ff','#a9a1ff','#f5c76d','#ff797e','#8af0e1','#d08aff','#ff9e54','#fff0a6']};
+let gold=Number(localStorage.getItem('epicDuelGold')||500);if(!Number.isFinite(gold)||gold<0)gold=500;
+let ownedWeapons=JSON.parse(localStorage.getItem('epicDuelOwned')||'[]');if(!Array.isArray(ownedWeapons))ownedWeapons=[];
+let equipped=JSON.parse(localStorage.getItem('epicDuelEquipped')||'{"sword":"base-sword","pistol":"base-pistol","bazooka":"base-bazooka"}');if(!equipped||typeof equipped!=='object')equipped={sword:'base-sword',pistol:'base-pistol',bazooka:'base-bazooka'};
+let shopCategory='sword';
+const manaSkills={power15:{cost:15,multiplier:1.5,label:'ARC BOLT',description:'50% more damage'},power20:{cost:20,multiplier:1.75,label:'PLASMA BURST',description:'75% more damage'},power30:{cost:30,multiplier:1.1,label:'NOVA STRIKE',description:'110% base damage to each rival'}};
+let skillSetupDone=false;
+function usedSkillPoints(){return skillNames.reduce((n,k)=>n+skillPoints[k],0)}
+function skillBonusDamage(){return skillPoints.damage*2}
+function rollDamage(avg,attacker,kind){const bonus=attacker===p?skillBonusDamage():0;const mean=avg+bonus;return Math.max(1,Math.round(mean*(0.9+Math.random()*0.2)))}
+const teamPlayer=()=>mode==='3v3'?[p,p2,p3].filter(Boolean):mode==='2v2'?[p,p2].filter(Boolean):[p];
+const teamEnemy=()=>mode==='3v3'?[e,e2,e3].filter(Boolean):['2v2','juggernaut'].includes(mode)?[e,e2].filter(Boolean):[e];
+const alive=list=>list.filter(f=>f&&f.hp>0);
+function supportTarget(){return supportKey==='p3'&&mode==='3v3'&&p3&&p3.hp>0?p3:supportKey==='p2'&&['2v2','3v3'].includes(mode)&&p2&&p2.hp>0?p2:p;}
+function selectedTarget(){
+const candidates=alive(teamEnemy());
+return candidates.find(f=>f===(targetKey==='e3'?e3:targetKey==='e2'?e2:e))||candidates[0]||e;
+}
+function nearestEnemy(from){
+return alive(teamEnemy()).sort((a,b)=>Math.abs(a.x-from.x)-Math.abs(b.x-from.x))[0]||e;
+}
+function allDown(list){
+return alive(list).length===0;
+}
+function fighter(x,player){
+return{
+x,hp:100,maxHp:100,en:100,maxEn:100,shield:0,maxShield:0,player,pose:'idle',poseTime:0,flash:0,guard:0,lean:0,attackKind:'',hit:false,critChance:.05,blockChance:.05,defendChance:.05,defensePoints:0}
+}
+function reset(){
+ matchEnded=false;document.querySelector('.app').style.visibility='visible';
+ pendingKind=null;
+ document.querySelectorAll('.buttons button').forEach(b=>b.classList.remove('skill-selected'));
+ const hint=document.getElementById('actionHint');if(hint)hint.textContent='Choose an action, then click a target in the arena.';
+ p=fighter(190,true);p.name=mode==='juggernaut'?'JUGGERNAUT':'YOU';
+ p.maxHp=100+skillPoints.health*5;p.hp=p.maxHp;p.maxEn=100+skillPoints.mana*5;p.en=p.maxEn;p.maxShield=skillPoints.shield*5;p.shield=p.maxShield;p.defensePoints=skillPoints.defense;p.equipped={...equipped};
+ p2=['2v2','3v3'].includes(mode)?fighter(330,true):null; p3=mode==='3v3'?fighter(390,true):null;
+ if(p2){p2.name='ALLY';p2.maxHp=100;p2.hp=100;p2.maxEn=100;p2.en=100;} if(p3){p3.name='ALLY 2';p3.maxHp=100;p3.hp=100;p3.maxEn=100;p3.en=100;}
+ e=fighter(710,false);e.name='RIVAL 1';e.maxHp=100;e.hp=100;e.maxEn=100;e.en=100;
+ e2=['2v2','juggernaut','3v3'].includes(mode)?fighter(570,false):null; e3=mode==='3v3'?fighter(510,false):null;
+ if(e2){e2.name='RIVAL 2';e2.maxHp=100;e2.hp=100;e2.maxEn=100;e2.en=100;} if(e3){e3.name='RIVAL 3';e3.maxHp=100;e3.hp=100;e3.maxEn=100;e3.en=100;}
+ // Juggernaut faces two opponents with a combined enemy skill budget capped at 150% of the champion's 30-point build.
+ if(mode==='juggernaut'){e.maxHp=125;e.hp=125;e2.maxHp=125;e2.hp=125;e.maxEn=100;e.en=100;e2.maxEn=100;e2.en=100;e.juggernautSkillShare=22;e2.juggernautSkillShare=23;}
+ p.x=['2v2','juggernaut','3v3'].includes(mode)?175:250;if(p2)p2.x=245;if(p3)p3.x=315;e.x=['2v2','juggernaut','3v3'].includes(mode)?725:650;if(e2)e2.x=655;if(e3)e3.x=585;
+ turnBusy=false;over=false;fx=[];combatMoves=[];playerTurn=0;enemyTurnCount=0;playerGunReady=0;playerBazookaReady=0;enemyGunReady=0;enemyBazookaReady=0;targetKey='e';supportKey='p';
+ const names={'1v1':'1 VS 1 · DUEL','2v2':'2 VS 2 · TEAM BATTLE','3v3':'3 VS 3 · SQUAD BATTLE','juggernaut':'JUGGERNAUT · 1 VS 2'};
+ document.getElementById('modeBadge').textContent=names[mode];
+ document.getElementById('mode1').classList.toggle('active',mode==='1v1');document.getElementById('mode2').classList.toggle('active',mode==='2v2');document.getElementById('modeJ').classList.toggle('active',mode==='juggernaut');
+ const hasSecond=['2v2','juggernaut'].includes(mode);
+ document.getElementById('targetRow').style.display=hasSecond||mode==='2v2'||mode==='3v3'?'flex':'none';
+ document.getElementById('targetE2').style.display=hasSecond?'inline-block':'none';
+ document.getElementById('p2Card').style.display=['2v2','3v3'].includes(mode)?'block':'none';document.getElementById('p3Card').style.display=mode==='3v3'?'block':'none';document.getElementById('e2Card').style.display=hasSecond||mode==='3v3'?'block':'none';document.getElementById('e3Card').style.display=mode==='3v3'?'block':'none';
+ document.getElementById('supportP2').style.display=['2v2','3v3'].includes(mode)?'inline-block':'none';document.getElementById('supportP3').style.display=mode==='3v3'?'inline-block':'none';document.getElementById('targetE3').style.display=mode==='3v3'?'inline-block':'none';
+ ui.log.innerHTML='<strong>'+names[mode]+'</strong> — Choose an action, then select your target. Equipment attacks do not consume energy.';
+ refresh();draw();
+}
+function refresh(){
+ const fighters=[['p',p],['e',e],['p2',p2],['e2',e2],['p3',p3],['e3',e3]];
+ for(const [key,f] of fighters){
+if(!f)continue;
+  ui[key+'HP'].style.width=Math.max(0,100*f.hp/f.maxHp)+'%';
+ui[key+'EN'].style.width=Math.max(0,100*f.en/f.maxEn)+'%';
+if(ui[key+'SH'])ui[key+'SH'].style.width=Math.max(0,Math.min(100,100*f.shield/Math.max(1,f.maxShield||30)))+'%';
+  ui[key+'HPtext'].textContent=`${f.hp} / ${f.maxHp} HP${f.shield>0?' · 🛡 '+f.shield:''}${f.hp>0&&f.hp<f.maxHp*.25?' · RAGE':''}`;
+ui[key+'ENtext'].textContent=`${f.en} / ${f.maxEn} MP`;
+ }
+ ['attack','heavy','special','bazooka','defend','heal','shield','power15','power20','power30'].forEach(id=>{const b=document.getElementById(id);b.disabled=turnBusy||over;b.classList.toggle('turn-hidden',turnBusy||over);});
+ for(const [id,skill] of Object.entries(manaSkills)){const b=document.getElementById(id);b.disabled=turnBusy||over||!p||p.en<skill.cost;b.querySelector('.detail').textContent=`${skill.cost} MP · ~${Math.round((id==='power30'?10:10*skill.multiplier)*weaponMultiplier('sword'))} dmg${id==='power30'?' / target':''}`;}
+ document.getElementById('special').disabled=turnBusy||over||playerTurn<playerGunReady;
+ document.getElementById('bazooka').disabled=turnBusy||over||playerTurn<playerBazookaReady;
+ document.querySelector('.arena')?.classList.toggle('opponent-turn',turnBusy); const support=supportTarget();
+ const healAvailable=(p&&p.hp<p.maxHp)||(['2v2','3v3'].includes(mode)&&[p2,p3].some(a=>a&&a.hp>0&&a.hp<a.maxHp));
+ const shieldCap=Math.max(10,skillPoints.shield*5+20);
+ const shieldAvailable=(p&&p.shield<shieldCap)||(['2v2','3v3'].includes(mode)&&[p2,p3].some(a=>a&&a.hp>0&&a.shield<shieldCap));
+ document.getElementById('heal').disabled=turnBusy||over||!support||!healAvailable;
+ document.getElementById('shield').disabled=turnBusy||over||!support||!shieldAvailable;
+ const gunButton=document.getElementById('special'),bazookaButton=document.getElementById('bazooka');
+ gunButton.querySelector('.detail').textContent=playerTurn<playerGunReady?`Wait ${playerGunReady-playerTurn} turns · ~${Math.round(17*weaponMultiplier('pistol'))} dmg`:`0 MP · ~${Math.round(17*weaponMultiplier('pistol'))} dmg`;
+ bazookaButton.querySelector('.detail').textContent=playerTurn<playerBazookaReady?`Wait ${playerBazookaReady-playerTurn} turns · ~${Math.round(21*weaponMultiplier('bazooka'))} dmg`:`0 MP · ~${Math.round(21*weaponMultiplier('bazooka'))} dmg`;
+ document.getElementById('targetE').classList.toggle('active',targetKey==='e');
+ document.getElementById('targetE2').classList.toggle('active',targetKey==='e2');document.getElementById('targetE3').classList.toggle('active',targetKey==='e3');document.getElementById('targetE3').disabled=turnBusy||over||!e3||e3.hp<=0||mode!=='3v3';
+ document.getElementById('targetE').disabled=turnBusy||over||!e||e.hp<=0;
+ document.getElementById('targetE2').disabled=turnBusy||over||!e2||e2.hp<=0||!['2v2','juggernaut','3v3'].includes(mode);
+ document.getElementById('supportP').classList.toggle('active',supportKey==='p');
+ document.getElementById('supportP2').classList.toggle('active',supportKey==='p2');document.getElementById('supportP3').classList.toggle('active',supportKey==='p3');document.getElementById('supportP3').disabled=turnBusy||over||mode!=='3v3'||!p3||p3.hp<=0;
+ document.getElementById('supportP2').disabled=turnBusy||over||!['2v2','3v3'].includes(mode)||!p2||p2.hp<=0;
+ document.getElementById('teamStatus').textContent=`Allies: ${alive(teamPlayer()).length} · Enemies: ${alive(teamEnemy()).length}`;
+}
+function message(title,body){
+ui.log.innerHTML=`<strong>${title}</strong> — ${body}`}
+function floatingText(f,text,type='damage'){
+ if(!f)return;
+ const isLower=f===p2||f===e2; const isThird=f===p3||f===e3;
+ // Popups float above the character's head, not over the feet or status panels.
+ fx.push({type:'floatText',x:f.x,y:isThird?255:isLower?198:66,text:String(text),life:1.45,total:1.45,color:type==='heal'?'#7dffb0':type==='shield'?'#7bdcff':type==='crit'?'#ff4ef2':type==='block'?'#8be8ff':type==='miss'?'#d5dce8':type==='damage'?'#ffdf8a':'#ffffff'});
+}
+function pose(f,name,t){
+f.pose=name;
+f.poseTime=t;
+f.hit=false}
+function hit(att,def,kind,allowMulti=false,damageMultiplier=null){
+ if(!att||!def||(!allowMulti&&att.hit)||def.hp<=0)return;
+ att.hit=true;
+ const average=kind==='heavy'?15:kind==='special'?17:kind==='bazooka'?21:10;
+ let raw=rollDamage(average,att,kind);
+ if(att===p){const category=(kind==='special'?'pistol':kind==='bazooka'?'bazooka':(['attack','heavy'].includes(kind)?'sword':null));if(category)raw=Math.round(raw*weaponMultiplier(category));}
+ if(manaSkills[kind]){const multiplier=damageMultiplier===null?manaSkills[kind].multiplier:damageMultiplier;raw=Math.round(raw*multiplier);}
+ const enraged=att.hp>0&&att.hp<att.maxHp*.25;
+ if(enraged)raw=Math.round(raw*(2.2+Math.random()*.3)); // +120% to +150% damage
+ const critical=Math.random()<(att.critChance??.05);
+ if(critical)raw=Math.round(raw*(2+Math.random()*.65)); // +100% to +165%; stacks multiplicatively with rage
+ const rageCritText=critical&&enraged?' CRIT · RAGE':critical?' CRITICAL':enraged?' RAGE':'';
+ // Melee and skill attacks can still be blocked. Equipment ranged attacks replace
+ // block with a rare MISS roll: pistols use half the defender's block chance,
+ // bazookas use one third. A miss is a glancing hit dealing 25%–50% damage.
+ const isRangedEquipment=kind==='special'||kind==='bazooka';
+ const baseBlockChance=def.blockChance??.05;
+ const missChance=kind==='special'?baseBlockChance/2:kind==='bazooka'?baseBlockChance/3:0;
+ const missed=isRangedEquipment&&Math.random()<missChance;
+ const blocked=!isRangedEquipment&&Math.random()<baseBlockChance;
+ const defended=!blocked&&Math.random()<(def.defendChance??.05);
+ const missMultiplier=missed?(0.25+Math.random()*0.25):1;
+ const defenseFactor=Math.max(0,1-(def.defensePoints||0)*.02);
+ let incoming=blocked?0:Math.max(0,Math.round(raw*missMultiplier*defenseFactor*((def.guard>0||defended)?.25:1)));
+ const shieldBefore=def.shield||0;
+ const absorbed=Math.min(shieldBefore,incoming);
+ def.shield=Math.max(0,shieldBefore-absorbed);
+ const dealt=Math.max(0,incoming-absorbed);
+ def.hp=Math.max(0,def.hp-dealt);
+ floatingText(def,blocked?'BLOCK!':missed?`MISS -${dealt}`:`-${dealt}${rageCritText}`,blocked?'block':missed?'miss':critical?'crit':'damage');
+ if(defended&&!blocked)floatingText(def,'DEFEND','shield');
+ if(absorbed>0)floatingText(def,`-${absorbed} SHIELD`,'shield');
+ if(enraged&&!att.rageAnnounced){att.rageAnnounced=true;message('RAGE AWAKENED',`${att.name} is below 25% health. Damage increased by 120%–150%.`)}
+ if(att===p&&skillPoints.lifesteal>0&&dealt>0){
+   const steal=Math.floor(dealt*skillPoints.lifesteal*.03);
+   if(steal>0){const oldHp=p.hp;p.hp=Math.min(p.maxHp,p.hp+steal);const gained=p.hp-oldHp;if(gained>0)floatingText(p,`+${gained}`,'heal');message('LIFESTEAL',`${gained} health recovered (${skillPoints.lifesteal*2}% of damage dealt).`)}
+ }
+ def.flash=.24;
+ def.lean=def.player?-1:1;
+ if(kind!=='special'&&kind!=='bazooka')fx.push({x:def.x,y:270,life:.45,type:'hit'});
+ if(kind==='special'||kind==='bazooka')fx.push({x:def.x,y:238,life:kind==='bazooka'?.65:.35,type:kind==='bazooka'?'blast':'beam'});
+ // A bazooka's splash uses half of its modified direct-hit damage before target-specific mitigation.
+ if(kind==='bazooka'&&teamEnemy().includes(def)){
+  const splash=teamEnemy().find(other=>other&&other!==def&&other.hp>0);
+  if(splash){
+   const splashRaw=Math.round(raw*.5);
+   // Splash damage follows bazooka MISS rules too, independently for each rival.
+   const splashMiss=Math.random()<((splash.blockChance??.05)/3);
+   const splashDefended=Math.random()<(splash.defendChance??.05);
+   const splashMissMultiplier=splashMiss?(0.25+Math.random()*0.25):1;
+   const splashDefenseFactor=Math.max(0,1-(splash.defensePoints||0)*.02);
+   let splashIncoming=Math.max(0,Math.round(splashRaw*splashMissMultiplier*splashDefenseFactor*((splash.guard>0||splashDefended)?.25:1)));
+   const shieldAbsorb=Math.min(splash.shield||0,splashIncoming);
+   splash.shield=Math.max(0,(splash.shield||0)-shieldAbsorb);
+   const splashDamage=Math.max(0,splashIncoming-shieldAbsorb);
+   splash.hp=Math.max(0,splash.hp-splashDamage);
+   floatingText(splash,splashMiss?`MISS -${splashDamage}`:`-${splashDamage}${rageCritText}`,splashMiss?'miss':critical?'crit':'damage');
+   if(splashDefended)floatingText(splash,'DEFEND','shield');
+   if(shieldAbsorb>0)floatingText(splash,`-${shieldAbsorb} SHIELD`,'shield');
+   splash.flash=.2;fx.push({x:splash.x,y:238,life:.55,type:'blast'});
+   if(splash.hp<=0)fx.push({x:splash.x,y:270,life:.8,type:'down'});
+   message('AREA DAMAGE',`${def.name}: ${missed?'MISS · ':''}${dealt} damage · ${splash.name}: ${splashMiss?'MISS · ':''}${splashDamage} splash damage (50% base).`);
+  }
+ }else if(blocked){message('BLOCK',`${def.name||'Rival'} blocked the attack completely.`)}
+ else if(missed){message('MISS',`${def.name||'Rival'} partially evaded the ${kind==='bazooka'?'bazooka blast':'pistol shot'}; the glancing hit dealt ${dealt} damage (${Math.round(missMultiplier*100)}% of the rolled damage).`)}
+ else {message(critical?'CRITICAL HIT':enraged?'RAGE ATTACK':'DAMAGE',`${def.name||'Rival'} took ${dealt} HP damage${absorbed?` (${absorbed} absorbed by shield)`:''}${defended?' · DEFENDED':''}.`)}
+ if(def.hp<=0){fx.push({x:def.x,y:270,life:.8,type:'down'});message('FIGHTER DOWN',`${def.name||'Fighter'} is out of the fight.`)}
+ if(allDown(teamEnemy())){over=true;turnBusy=false;message('VICTORY!',mode==='juggernaut'?'You defeated both challengers! Juggernaut victory!':['2v2','3v3'].includes(mode)?'The rival team is defeated. Team victory!':'You defeated your rival!');scheduleLobbyReturn(true)}
+ if(allDown(teamPlayer())){over=true;turnBusy=false;message('DEFEAT','Your entire team has been defeated.');scheduleLobbyReturn(false)}
+ refresh();
+}
+function resolveSkillHits(attacker,target,kind){
+ if(!attacker||!target||target.hp<=0)return;
+ const opponents=alive(attacker.player?teamEnemy():teamPlayer());
+ // Nova Strike deals 110% of basic damage to each of two living rivals (220% combined).
+ // If only one rival remains, it concentrates the charge for 210% single-target damage.
+ const multiplier=kind==='power30'?(opponents.length>1?1.1:2.1):null;
+ hit(attacker,target,kind,false,multiplier);
+ if(kind==='power30'&&opponents.length>1){
+  for(const other of opponents){if(other!==target)hit(attacker,other,kind,true,multiplier);}
+ }
+}
+function playerMove(kind,targetOverride=null){
+ if(turnBusy||over)return;
+ const cost=kind==='heavy'?16:(manaSkills[kind]?.cost||0);
+ if(p.en<cost){
+message('NOT ENOUGH ENERGY','You do not have enough energy for this action. Defend to recover energy.');
+return}
+ if(kind==='special'&&playerTurn<playerGunReady){
+message('WEAPON RECHARGING',`Wait ${playerGunReady-playerTurn} more turn(s) before using the pistol again.`);
+return}
+ if(kind==='bazooka'&&playerTurn<playerBazookaReady){
+message('BAZOOKA NOT READY',`Wait ${playerBazookaReady-playerTurn} more turn(s) before using the bazooka again.`);
+return}
+ playerTurn++;
+ if(kind==='special')playerGunReady=playerTurn+2;
+ if(kind==='bazooka')playerBazookaReady=playerTurn+3;
+ const target=targetOverride==='e3'?e3:targetOverride==='e2'?e2:targetOverride==='e'?e:selectedTarget();
+ if(!target||target.hp<=0){
+message('NO TARGET','No opponents remain.');
+return;
+}
+ turnBusy=true;
+p.en-=cost;
+ if(kind==='heal'){const recipient=supportTarget();const amount=Math.round(18+skillPoints.lifesteal*1.5);const before=recipient.hp;recipient.hp=Math.min(recipient.maxHp,recipient.hp+amount);const gained=recipient.hp-before;if(gained>0)floatingText(recipient,`+${gained}`,'heal');pose(p,'heal',.65);message('HEAL',`${recipient.name} gained +${gained} HP.`);refresh();setTimeout(()=>{if(over)return;setTimeout(()=>teamResponse(),650)},450);return}
+ else if(kind==='shield'){const recipient=supportTarget();const cap=Math.max(10,20+skillPoints.shield*5);const amount=12+skillPoints.shield*3;const before=recipient.shield;recipient.maxShield=Math.max(recipient.maxShield,cap);recipient.shield=Math.min(cap,recipient.shield+amount);const gained=recipient.shield-before;if(gained>0)floatingText(recipient,`+${gained} SHIELD`,'shield');pose(p,'guard',.65);message('SHIELD',`${recipient.name} gained +${gained} shield.`);refresh();setTimeout(()=>{if(over)return;setTimeout(()=>teamResponse(),650)},450);return}
+ else if(kind==='defend'){
+p.guard=1.8;
+pose(p,'guard',.75);
+message('DEFENSE','You are guarding. Waiting for the opponent…')}
+ else if(kind==='special'||kind==='bazooka'){
+  // Ranged equipment: stay in place, draw weapon, aim, and fire a traveling projectile.
+  pose(p,kind==='bazooka'?'bazooka':'pistol',1.35);
+  p.attackKind=kind;
+  message(kind==='bazooka'?'BAZOOKA SHOT':'PISTOL SHOT',
+    kind==='bazooka'?'You lift the bazooka from your back, shoulder it, and fire!':'You draw your pistol and fire from your position!');
+  fx.push({
+    x:p.x+40,
+    y:238,
+    life:kind==='bazooka'?1.0:.7,
+    type:kind==='bazooka'?'rocket':'bullet',
+    fromX:p.x+40,
+    toX:target.x-28,
+    fromY:238,
+    toY:238,
+    progress:0,
+    owner:'player'
+  }
+);
+ }
+ else {
+  if(Math.abs(target.x-p.x)>520){message('OUT OF RANGE','You must be closer to use a sword attack.');playerTurn--;return}
+  pose(p,kind==='heavy'?'heavy':'attack',1.05);
+  p.attackKind=kind;
+  combatMoves.push({
+    fighter:p,
+    from:p.x,
+    to:target.x-(p.player?92:-92),
+    start:performance.now(),
+    approach:220,
+    strike:kind==='heavy'?450:380,
+    retreat:780,
+    end:1050,
+    kind,
+    hit:false
+  }
+);
+  message('MELEE ATTACK','You lunge toward the rival and strike with your sword!');
+ }
+ refresh();
+ if(kind==='defend'){
+  setTimeout(()=>{
+if(over)return;
+p.en=Math.min(p.maxEn,p.en+8);
+refresh();
+setTimeout(()=>teamResponse(),850)}
+,300);
+ }
+ else if(kind==='special'||kind==='bazooka'){
+  setTimeout(()=>{
+if(over)return;
+hit(p,target,kind);
+refresh();
+if(!over)setTimeout(()=>teamResponse(),850)}
+,kind==='bazooka'?760:560);
+ }
+ else if(manaSkills[kind]){
+  pose(p,'cast',1.05);p.attackKind=kind;
+  const opponents=alive(teamEnemy());
+  fx.push({x:p.x+34,y:235,life:.78,total:.78,type:'energy',fromX:p.x+34,toX:target.x-30,fromY:235,toY:235,progress:0,owner:'player',power:kind});
+  if(kind==='power30'&&opponents.length>1){const secondary=opponents.find(f=>f!==target);if(secondary)fx.push({x:p.x+34,y:245,life:.82,total:.82,type:'energy',fromX:p.x+34,toX:secondary.x-30,fromY:245,toY:245,progress:0,owner:'player',power:kind});}
+  message(manaSkills[kind].label,`${manaSkills[kind].cost} mana spent. ${kind==='power30'&&opponents.length>1?'Each living rival takes 110% of basic attack damage (220% combined against two).':kind==='power30'?'With one rival remaining, Nova Strike concentrates for 210% damage.':manaSkills[kind].description}.`);
+  setTimeout(()=>{if(over)return;resolveSkillHits(p,target,kind);refresh();if(!over)setTimeout(()=>teamResponse(),850)},650);
+ }
+ else {
+  setTimeout(()=>{
+   if(over)return;
+   const move=combatMoves.find(m=>m.fighter===p&&!m.hit);
+   if(move){
+move.hit=true;
+hit(p,target,kind);
+refresh()}
+  }
+,kind==='heavy'?470:390);
+  setTimeout(()=>{
+if(over)return;
+setTimeout(()=>teamResponse(),300)}
+,1150);
+ }
+}
+function chooseAITarget(attacker){
+ return alive(teamPlayer()).sort((a,b)=>Math.abs(a.x-attacker.x)-Math.abs(b.x-attacker.x))[0]||p;
+}
+function animateMelee(attacker,target,kind,delay=0){
+ if(!attacker||!target||attacker.hp<=0||target.hp<=0)return;
+ pose(attacker,kind==='heavy'?'heavy':'attack',1.05);
+attacker.attackKind=kind;
+ combatMoves.push({
+fighter:attacker,from:attacker.x,to:target.x+(attacker.player?88:-88),start:performance.now()+delay,approach:220,strike:kind==='heavy'?470:390,retreat:790,end:1060,kind,hit:false}
+);
+ setTimeout(()=>{
+if(!over&&target.hp>0&&attacker.hp>0)hit(attacker,target,kind);
+}
+,delay+(kind==='heavy'?490:410));
+}
+function fireRanged(attacker,target,kind,delay=0){
+ if(!attacker||!target||attacker.hp<=0||target.hp<=0)return;
+ pose(attacker,kind==='bazooka'?'bazooka':'pistol',1.35);
+attacker.attackKind=kind;
+ const direction=target.x>attacker.x?1:-1;
+ fx.push({
+x:attacker.x+direction*38,y:238,life:kind==='bazooka'?1.0:.7,type:kind==='bazooka'?'rocket':'bullet',fromX:attacker.x+direction*38,toX:target.x-direction*30,fromY:238,toY:238,progress:0,owner:attacker.player?'player':'enemy'}
+);
+ setTimeout(()=>{
+if(!over&&target.hp>0&&attacker.hp>0)hit(attacker,target,kind);
+}
+,delay+(kind==='bazooka'?760:560));
+}
+function companionAct(){
+ if(!['2v2','3v3'].includes(mode)||over)return;
+ const allies=[p2,...(mode==='3v3'?[p3]:[])].filter(a=>a&&a.hp>0);
+ allies.forEach((ally,index)=>{const target=nearestEnemy(ally);if(!target)return;setTimeout(()=>{if(over||ally.hp<=0||target.hp<=0)return;if(Math.abs(target.x-ally.x)<260){animateMelee(ally,target,'attack',0);message('ALLY SUPPORT',`${ally.name} lunges toward ${target.name} and strikes with a sword.`)}else{fireRanged(ally,target,'special',0);message('ALLY SUPPORT',`${ally.name} fires a pistol from range.`)}},350+index*350)});
+}
+function enemyAct(attacker,done){
+ if(over){
+if(done)done();
+return;
+}
+ if(!attacker||attacker.hp<=0){
+if(done)done();
+return;
+}
+ const target=chooseAITarget(attacker);
+if(!target){
+if(done)done();
+return;
+}
+ const dist=Math.abs(target.x-attacker.x),roll=Math.random();
+let kind='attack';
+ if(attacker.en>=30&&roll<.13)kind='power30';
+ else if(attacker.en>=20&&roll<.25)kind='power20';
+ else if(attacker.en>=15&&roll<.38)kind='power15';
+ else if(dist>250){
+kind=(roll<.66?'special':roll<.82?'bazooka':'defend');
+}
+ else if(attacker.en>=16&&roll<.3)kind='heavy';
+else if(roll<.47)kind='defend';
+ if(kind==='defend'){
+  attacker.guard=1.8;
+attacker.en=Math.min(attacker.maxEn,attacker.en+12);
+pose(attacker,'guard',.75);
+  message('RIVAL DEFENDS',`${attacker.name||'Rival'} guards and recovers energy.`);
+  setTimeout(()=>done&&done(),700);
+return;
+ }
+ attacker.en-=kind==='heavy'?16:(manaSkills[kind]?.cost||0);
+ if(manaSkills[kind]){
+  pose(attacker,'cast',1.05);attacker.attackKind=kind;
+  const targets=alive(attacker.player?teamEnemy():teamPlayer());
+  fx.push({x:attacker.x+(attacker.player?34:-34),y:235,life:.78,total:.78,type:'energy',fromX:attacker.x+(attacker.player?34:-34),toX:target.x+(attacker.player?-30:30),fromY:235,toY:235,progress:0,owner:attacker.player?'player':'enemy',power:kind});
+  if(kind==='power30'&&targets.length>1){const secondary=targets.find(f=>f!==target);if(secondary)fx.push({x:attacker.x+(attacker.player?34:-34),y:245,life:.82,total:.82,type:'energy',fromX:attacker.x+(attacker.player?34:-34),toX:secondary.x+(attacker.player?-30:30),fromY:245,toY:245,progress:0,owner:attacker.player?'player':'enemy',power:kind});}
+  message(manaSkills[kind].label,`${attacker.name} spends ${manaSkills[kind].cost} mana.`);
+  setTimeout(()=>{if(!over&&target.hp>0&&attacker.hp>0)resolveSkillHits(attacker,target,kind);},650);
+ }
+ else if(kind==='special'||kind==='bazooka'){
+  message('RIVAL FIRES',`${attacker.name||'Rival'} without moving, ${kind==='bazooka'?'fires a bazooka rocket':'fires a pistol'}.`);
+  fireRanged(attacker,target,kind,0);
+ }
+else{
+  message('RIVAL MELEE ATTACK',`${attacker.name||'Rival'} attacks with a sword.`);
+animateMelee(attacker,target,kind,0);
+ }
+ setTimeout(()=>done&&done(),1100);
+}
+function teamResponse(){
+ if(over)return;
+ companionAct();
+ setTimeout(()=>{
+  if(over)return;
+  const foes=alive(teamEnemy());
+if(!foes.length)return;
+  enemyAct(foes[0],()=>{
+   if(over)return;
+   const nextEnemies=alive(teamEnemy()).filter(f=>f!==foes[0]); const actNext=(i)=>{if(over||i>=nextEnemies.length){finishRound();return;}setTimeout(()=>enemyAct(nextEnemies[i],()=>actNext(i+1)),420)};actNext(0);
+  }
+);
+ }
+,['2v2','3v3','juggernaut'].includes(mode)?850:0);
+}
+function finishRound(){
+ if(over)return;
+ for(const f of [...teamPlayer(),...teamEnemy()]){
+f.en=Math.min(f.maxEn,f.en+4);
+f.guard=Math.max(0,f.guard-.8);
+}
+ turnBusy=false;
+refresh();
+ if(!over)message('YOUR TURN','Choose a target. Your ally will also act automatically this turn.');
+}
+function rounded(x,y,w,h,r){
+ctx.beginPath();
+ctx.roundRect(x,y,w,h,r);
+ctx.fill()}
+function drawBackdrop(){
+ // Cyberpunk side-view arena: layered megacity silhouettes, holographic skyline,
+ // emissive floor grid, steel bulkheads and a neon combat platform.
+ const W=900,H=440;
+ const sky=ctx.createLinearGradient(0,0,0,H);
+ sky.addColorStop(0,'#071323');sky.addColorStop(.36,'#101e38');sky.addColorStop(.7,'#15172b');sky.addColorStop(1,'#070b15');
+ ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
+ // Distant planet and atmospheric glow.
+ let glow=ctx.createRadialGradient(670,92,5,670,92,190);glow.addColorStop(0,'rgba(44,224,255,.24)');glow.addColorStop(1,'rgba(44,224,255,0)');ctx.fillStyle=glow;ctx.fillRect(450,0,450,260);
+ ctx.fillStyle='#172b48';ctx.beginPath();ctx.arc(688,72,35,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#35d9f4';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='rgba(72,218,255,.2)';ctx.beginPath();ctx.arc(688,72,29,0,Math.PI*2);ctx.fill();
+ // Distant industrial skyline with lit windows.
+ for(let i=0;i<18;i++){
+   const x=i*54-10,bw=34+(i%3)*8,bh=65+((i*37)%92),y=210-bh;
+   ctx.fillStyle=i%2?'#101d31':'#17243a';ctx.fillRect(x,y,bw,bh+44);
+   ctx.fillStyle='#243b57';ctx.fillRect(x+4,y+5,bw-8,4);
+   for(let wy=y+15;wy<210;wy+=13)for(let wx=x+6;wx<x+bw-4;wx+=10){
+     if(((i*7+wy+wx)%5)!==0){ctx.fillStyle=((i+wy+wx)%3===0)?'#24e8e0':'#f13da8';ctx.globalAlpha=.35+((i+wy)%4)*.12;ctx.fillRect(wx,wy,4,5);ctx.globalAlpha=1;}
+   }
+ }
+ // Horizon laser rails and holographic billboards.
+ ctx.fillStyle='#0a1423';ctx.fillRect(0,205,W,235);
+ ctx.fillStyle='#182c42';ctx.fillRect(0,205,W,19);ctx.fillStyle='#29e6f0';ctx.fillRect(0,205,W,2);ctx.fillStyle='#ef3caa';ctx.fillRect(0,221,W,2);
+ for(const x of [44,185,710,854]){ctx.fillStyle='#1d314b';ctx.fillRect(x,138,12,86);ctx.fillStyle='#36dff2';ctx.fillRect(x+3,145,3,68);ctx.fillStyle='#e83ca7';ctx.fillRect(x+7,153,2,52);}
+ // Floor base and perspective grid that fills the entire bottom of the canvas.
+ const floor=ctx.createLinearGradient(0,225,0,H);floor.addColorStop(0,'#1a2b40');floor.addColorStop(.42,'#111d31');floor.addColorStop(1,'#080e1b');ctx.fillStyle=floor;ctx.fillRect(0,224,W,H-224);
+ ctx.save();ctx.beginPath();ctx.moveTo(0,238);ctx.lineTo(W,238);ctx.lineTo(W,H);ctx.lineTo(0,H);ctx.closePath();ctx.clip();
+ ctx.strokeStyle='rgba(42,220,240,.19)';ctx.lineWidth=1;
+ for(let x=-500;x<1400;x+=54){ctx.beginPath();ctx.moveTo(450+(x-450)*.14,225);ctx.lineTo(x,H);ctx.stroke();}
+ for(let y=238;y<H;y+=Math.max(9,(y-220)*.13)){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+ ctx.restore();
+ // Central platform: layered steel plates and bright neon trim.
+ ctx.fillStyle='rgba(0,0,0,.45)';ctx.beginPath();ctx.ellipse(450,354,365,83,0,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle='#14283d';ctx.beginPath();ctx.ellipse(450,337,360,84,0,0,Math.PI*2);ctx.fill();
+ ctx.strokeStyle='#e53eae';ctx.lineWidth=5;ctx.beginPath();ctx.ellipse(450,333,351,77,0,0,Math.PI*2);ctx.stroke();
+ ctx.strokeStyle='#2ce5f2';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(450,330,337,65,0,0,Math.PI*2);ctx.stroke();
+ ctx.fillStyle='#1b3047';ctx.beginPath();ctx.ellipse(450,329,330,61,0,0,Math.PI*2);ctx.fill();
+ ctx.save();ctx.beginPath();ctx.ellipse(450,329,324,56,0,0,Math.PI*2);ctx.clip();
+ for(let row=0;row<5;row++)for(let col=0;col<17;col++){
+   const x=col*42+(row%2)*21-10,y=281+row*23;
+   ctx.fillStyle=(row+col)%3===0?'#263d54':(row+col)%3===1?'#1d334a':'#22394f';ctx.fillRect(x,y,39,20);
+   ctx.strokeStyle='rgba(64,229,245,.16)';ctx.lineWidth=1;ctx.strokeRect(x,y,39,20);
+ }
+ ctx.restore();
+ // Center holographic sigil and team markers.
+ ctx.fillStyle='#0b1729';ctx.beginPath();ctx.ellipse(450,326,70,25,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#2de5f0';ctx.lineWidth=3;ctx.stroke();ctx.strokeStyle='#ed3da9';ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(450,326,58,17,0,0,Math.PI*2);ctx.stroke();
+ ctx.fillStyle='#e8fbff';ctx.font='900 12px Arial';ctx.textAlign='center';ctx.shadowColor='#2de5f0';ctx.shadowBlur=9;ctx.fillText('DUEL // COMBAT ZONE',450,330);ctx.shadowBlur=0;
+ for(const x of [100,800]){ctx.fillStyle='#0b1729';ctx.beginPath();ctx.arc(x,326,24,0,Math.PI*2);ctx.fill();ctx.strokeStyle=x<450?'#2ce5f2':'#ed3da9';ctx.lineWidth=3;ctx.stroke();ctx.fillStyle=x<450?'#2ce5f2':'#ed3da9';ctx.beginPath();ctx.moveTo(x,309);ctx.lineTo(x+12,326);ctx.lineTo(x,343);ctx.lineTo(x-12,326);ctx.closePath();ctx.fill();}
+ // Animated-feeling ambient particles, energy streaks and hazard lights.
+ for(let i=0;i<48;i++){const x=(i*191+43)%W,y=228+((i*67)%202);ctx.fillStyle=i%2?'#28e8f3':'#ef3da9';ctx.globalAlpha=.18+((i%4)*.1);ctx.fillRect(x,y,i%3===0?3:2,i%3===0?3:2);ctx.globalAlpha=1;}
+ ctx.fillStyle='#0b1424';ctx.fillRect(0,0,W,7);ctx.fillStyle='#2ce5f2';ctx.fillRect(0,0,W,2);ctx.fillStyle='#ed3da9';ctx.fillRect(0,H-3,W,3);
+}
+function drawCharacter(f){
+ const x=f.x,y=335+(f.cy||0),dir=f.player?1:-1,flip=dir;
+ ctx.save();
+ctx.translate(x,y);
+ctx.scale(flip,1);
+ const isP=f.player,metal=isP?'#55b9d9':'#cf6e75',dark=isP?'#1b567b':'#6d2938',light=isP?'#a6e4f0':'#f2b4aa';
+ // Ground contact shadow and articulated armored legs.
+ ctx.fillStyle='#060a10aa';ctx.beginPath();ctx.ellipse(0,2,54,11,0,0,Math.PI*2);ctx.fill();
+ const gait=Math.sin(performance.now()/115);
+ let lk={x:-19+gait*1.5,y:-31},la={x:-27+gait*2,y:-8};
+ let rk={x:18-gait*1.5,y:-30},ra={x:29-gait*2,y:-8};
+ if(f.pose==='dash') {lk={x:-27,y:-25};la={x:-39,y:-6};rk={x:24,y:-37};ra={x:46,y:-6};}
+ if(f.pose==='attack') {lk={x:-21,y:-29};la={x:-31,y:-6};rk={x:22,y:-28};ra={x:39,y:-6};}
+ if(f.pose==='heavy') {lk={x:-28,y:-25};la={x:-39,y:-6};rk={x:25,y:-33};ra={x:44,y:-6};}
+ const drawLeg=(hip,knee,ankle,front)=>{
+   ctx.lineCap='round';ctx.lineJoin='round';
+   ctx.strokeStyle='#0a111c';ctx.lineWidth=24;ctx.beginPath();ctx.moveTo(hip.x,hip.y);ctx.lineTo(knee.x,knee.y);ctx.lineTo(ankle.x,ankle.y);ctx.stroke();
+   ctx.strokeStyle=dark;ctx.lineWidth=17;ctx.beginPath();ctx.moveTo(hip.x,hip.y);ctx.lineTo(knee.x,knee.y);ctx.lineTo(ankle.x,ankle.y);ctx.stroke();
+   // Knee hinge and segmented shin plate make the joints readable in motion.
+   ctx.fillStyle='#101b29';ctx.beginPath();ctx.arc(knee.x,knee.y,10,0,Math.PI*2);ctx.fill();
+   ctx.fillStyle=metal;ctx.beginPath();ctx.moveTo(knee.x-7,knee.y-5);ctx.lineTo(knee.x+6,knee.y-7);ctx.lineTo(ankle.x+5,ankle.y-4);ctx.lineTo(ankle.x-5,ankle.y-1);ctx.closePath();ctx.fill();
+   ctx.strokeStyle=light;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(knee.x-2,knee.y-2);ctx.lineTo(ankle.x-1,ankle.y-5);ctx.stroke();
+   // Heavy, toe-shaped boot with a separate ankle cuff.
+   ctx.fillStyle='#111a27';ctx.beginPath();ctx.moveTo(ankle.x-5,ankle.y-5);ctx.lineTo(ankle.x+7,ankle.y-6);ctx.lineTo(ankle.x+17,ankle.y+1);ctx.lineTo(ankle.x+14,ankle.y+5);ctx.lineTo(ankle.x-10,ankle.y+5);ctx.closePath();ctx.fill();
+   ctx.fillStyle=front?'#71879b':'#3d5268';ctx.fillRect(ankle.x-4,ankle.y-3,13,3);
+   ctx.fillStyle='#050a12';ctx.fillRect(ankle.x+5,ankle.y+2,10,2);
+ };
+ drawLeg({x:-12,y:-63},lk,la,false);
+ drawLeg({x:12,y:-63},rk,ra,true);
+ // torso armor
+ ctx.fillStyle=dark;
+ctx.beginPath();
+ctx.moveTo(-23,-111);
+ctx.lineTo(20,-111);
+ctx.lineTo(28,-66);
+ctx.lineTo(13,-56);
+ctx.lineTo(-16,-56);
+ctx.lineTo(-29,-69);
+ctx.closePath();
+ctx.fill();
+ ctx.fillStyle=metal;
+ctx.beginPath();
+ctx.moveTo(-18,-108);
+ctx.lineTo(14,-108);
+ctx.lineTo(19,-74);
+ctx.lineTo(0,-65);
+ctx.lineTo(-19,-76);
+ctx.closePath();
+ctx.fill();
+ ctx.fillStyle=light;
+ctx.beginPath();
+ctx.moveTo(-4,-104);
+ctx.lineTo(6,-103);
+ctx.lineTo(0,-77);
+ctx.closePath();
+ctx.fill();
+ // Detailed back rig: strap, hard case and a mounted bazooka are visible even while idle.
+ ctx.save();
+ ctx.strokeStyle='#101a27';
+ctx.lineWidth=7;
+ctx.beginPath();
+ctx.moveTo(-18,-119);
+ctx.lineTo(17,-67);
+ctx.stroke();
+ ctx.strokeStyle='#b7c4d2';
+ctx.lineWidth=2;
+ctx.beginPath();
+ctx.moveTo(-18,-119);
+ctx.lineTo(17,-67);
+ctx.stroke();
+ ctx.translate(-27,-105);
+ctx.rotate(-.20);
+ ctx.fillStyle='#1b2937';
+ctx.beginPath();
+ctx.roundRect(-9,-33,18,63,5);
+ctx.fill();
+ ctx.fillStyle=(f.player?weaponFor('bazooka').color:'#60768b');
+ctx.fillRect(-5,-28,10,48);
+ ctx.fillStyle='#d2a65c';
+ctx.fillRect(-10,15,20,5);
+ ctx.fillStyle='#101a25';
+ctx.fillRect(-11,-37,22,8);
+ ctx.fillStyle='#93a8b9';
+ctx.fillRect(-4,-35,8,4);
+ ctx.restore();
+ // Hip holster with pistol grip visible.
+ ctx.fillStyle='#111a27';
+ctx.beginPath();
+ctx.roundRect(-34,-79,13,25,3);
+ctx.fill();
+ ctx.fillStyle=(f.player?weaponFor('pistol').color:'#74899b');
+ctx.fillRect(-31,-76,7,11);
+ // A sheathed blade remains visible while idle; tiers change its colour and silhouette.
+ if(f.pose!=='attack'&&f.pose!=='heavy'){
+   const idleSword=f.player?weaponFor('sword'):{color:'#9eacbb',tier:0};
+   ctx.save();ctx.translate(-31,-101);ctx.rotate(-.28);
+   ctx.fillStyle='#111a27';ctx.fillRect(-2,-27,8,42);
+   ctx.fillStyle=idleSword.color;ctx.beginPath();ctx.moveTo(-1,-25);ctx.lineTo(5,-25);ctx.lineTo(4,-30-(idleSword.tier||0)*1.2);ctx.lineTo(2,-33-(idleSword.tier||0)*1.2);ctx.lineTo(0,-29);ctx.closePath();ctx.fill();
+   ctx.fillStyle='#d6b56c';ctx.fillRect(-4,-27,12,4);ctx.fillStyle='#3c2c22';ctx.fillRect(1,13,4,9);ctx.restore();
+ }
+ctx.fillStyle='#101722';
+ctx.fillRect(-31,-65,7,8);
+ // shoulder armor
+ ctx.fillStyle=metal;
+ctx.beginPath();
+ctx.moveTo(-25,-106);
+ctx.lineTo(-39,-97);
+ctx.lineTo(-33,-80);
+ctx.lineTo(-18,-84);
+ctx.closePath();
+ctx.fill();
+ ctx.beginPath();
+ctx.moveTo(19,-107);
+ctx.lineTo(34,-101);
+ctx.lineTo(36,-85);
+ctx.lineTo(20,-82);
+ctx.closePath();
+ctx.fill();
+ // Articulated arms: shoulders, elbows, forearm plates, wrists and individual fingers.
+ let fistX=34,fistY=-86,offHandX=-30,offHandY=-79;
+ let mainElbow={x:38,y:-91},offElbow={x:-31,y:-88};
+ if(f.pose==='attack'){mainElbow={x:43,y:-98};fistX=62;fistY=-87;offElbow={x:-29,y:-91};offHandX=-35;offHandY=-82;}
+ if(f.pose==='heavy'){mainElbow={x:44,y:-86};fistX=61;fistY=-75;offElbow={x:-18,y:-91};offHandX=-8;offHandY=-80;}
+ if(f.pose==='pistol'){mainElbow={x:43,y:-99};fistX=67;fistY=-98;offElbow={x:-28,y:-87};offHandX=-29;offHandY=-80;}
+ if(f.pose==='bazooka'){mainElbow={x:43,y:-91};fistX=56;fistY=-94;offElbow={x:-8,y:-95};offHandX=7;offHandY=-91;}
+ if(f.pose==='guard'){mainElbow={x:29,y:-103};fistX=19;fistY=-104;offElbow={x:5,y:-88};offHandX=25;offHandY=-81;}
+ if(f.pose==='heal'){mainElbow={x:37,y:-96};fistX=49;fistY=-112;offElbow={x:-4,y:-98};offHandX=-16;offHandY=-111;}
+ const drawArm=(shoulder,elbow,wrist,front)=>{
+   ctx.lineCap='round';ctx.lineJoin='round';
+   ctx.strokeStyle='#0a111c';ctx.lineWidth=19;ctx.beginPath();ctx.moveTo(shoulder.x,shoulder.y);ctx.lineTo(elbow.x,elbow.y);ctx.lineTo(wrist.x,wrist.y);ctx.stroke();
+   ctx.strokeStyle=dark;ctx.lineWidth=13;ctx.beginPath();ctx.moveTo(shoulder.x,shoulder.y);ctx.lineTo(elbow.x,elbow.y);ctx.lineTo(wrist.x,wrist.y);ctx.stroke();
+   ctx.fillStyle='#101b29';ctx.beginPath();ctx.arc(elbow.x,elbow.y,8,0,Math.PI*2);ctx.fill();
+   ctx.fillStyle=metal;ctx.beginPath();ctx.arc(elbow.x,elbow.y,5,0,Math.PI*2);ctx.fill();
+   ctx.save();ctx.translate((elbow.x+wrist.x)/2,(elbow.y+wrist.y)/2);ctx.rotate(Math.atan2(wrist.y-elbow.y,wrist.x-elbow.x));
+   ctx.fillStyle=front?'#8da7ba':'#526b82';ctx.beginPath();ctx.roundRect(-7,-6,16,12,3);ctx.fill();
+   ctx.fillStyle=metal;ctx.fillRect(-4,-4,9,2);ctx.restore();
+   ctx.fillStyle=light;ctx.beginPath();ctx.arc(wrist.x,wrist.y,8.5,0,Math.PI*2);ctx.fill();
+   // Finger grooves and thumb give the hands a less mitten-like silhouette.
+   ctx.strokeStyle='#344454';ctx.lineWidth=1.4;
+   for(let i=-1;i<=1;i++){ctx.beginPath();ctx.moveTo(wrist.x+3,wrist.y+i*3);ctx.lineTo(wrist.x+7,wrist.y+i*3);ctx.stroke();}
+   ctx.beginPath();ctx.moveTo(wrist.x-3,wrist.y+2);ctx.lineTo(wrist.x+1,wrist.y+6);ctx.stroke();
+ };
+ drawArm({x:-23,y:-99},offElbow,{x:offHandX,y:offHandY},false);
+ drawArm({x:22,y:-101},mainElbow,{x:fistX,y:fistY},true);
+ // neck and helmet/head
+ ctx.fillStyle=dark;
+rounded(-9,-125,18,18,4);
+ ctx.fillStyle=metal;
+ctx.beginPath();
+ctx.moveTo(-19,-151);
+ctx.lineTo(14,-151);
+ctx.lineTo(21,-134);
+ctx.lineTo(12,-120);
+ctx.lineTo(-13,-120);
+ctx.lineTo(-22,-135);
+ctx.closePath();
+ctx.fill();
+ ctx.fillStyle='#111b29';
+ctx.beginPath();
+ctx.moveTo(0,-145);
+ctx.lineTo(17,-142);
+ctx.lineTo(13,-133);
+ctx.lineTo(-2,-135);
+ctx.closePath();
+ctx.fill();
+ ctx.fillStyle=light;
+ctx.fillRect(2,-141,10,3);
+ // crest
+ ctx.fillStyle=isP?'#f3c86d':'#b7c6d9';
+ctx.beginPath();
+ctx.moveTo(-10,-151);
+ctx.lineTo(-1,-168);
+ctx.lineTo(7,-151);
+ctx.closePath();
+ctx.fill();
+ // arm guard
+ ctx.fillStyle='#0d1724';
+rounded(fistX-10,fistY-7,19,14,3);
+ctx.fillStyle=metal;
+ctx.fillRect(fistX-7,fistY-4,13,3);
+ // Separate melee sword: only displayed/used for close-range sword attacks.
+ if(f.pose==='attack'||f.pose==='heavy'){
+   const swordTier=f.player?weaponFor('sword').tier:0;const bladeTip=-55-swordTier*2.4;
+   ctx.save();
+ctx.translate(fistX+7,fistY+1);
+ctx.rotate(f.pose==='heavy'?-0.78:-0.28);
+   ctx.fillStyle=(f.player?weaponFor('sword').color:'#a6b5c8');
+ctx.beginPath();
+ctx.moveTo(-3,0);
+ctx.lineTo(2,-9);
+ctx.lineTo(7,bladeTip);
+ctx.lineTo(12,bladeTip-7);
+ctx.lineTo(12,bladeTip+7);
+ctx.lineTo(7,-4);
+ctx.lineTo(3,0);
+ctx.closePath();
+ctx.fill();
+   ctx.fillStyle='#f5c56b';
+ctx.fillRect(-6,-5,20,5);
+ctx.fillStyle='#523b26';
+ctx.fillRect(1,0,5,15);
+   ctx.restore();
+ }
+ // The idle back-mounted launcher and hip holster are drawn with the armor above.
+ if(f.pose==='pistol'){
+   // Draw from the hip: arm is aimed forward and the pistol is clearly visible in the hand.
+   ctx.save();
+const pistolTier=f.player?weaponFor('pistol').tier:0;const pistolLength=35+pistolTier*2.2;
+ctx.translate(fistX+1,fistY-4);
+ctx.rotate(-.04);
+   ctx.fillStyle='#111a27';
+ctx.beginPath();
+ctx.roundRect(-2,-9,pistolLength,15,3);
+ctx.fill();
+   ctx.fillStyle=(f.player?weaponFor('pistol').color:'#8b9db0');
+ctx.fillRect(2,-7,pistolLength-10,4);
+ctx.fillStyle='#3c5268';
+ctx.fillRect(7,5,8,15);
+   ctx.fillStyle='#111827';
+ctx.fillRect(8,8,6,11);
+ctx.fillStyle='#6ee7ff';
+ctx.fillRect(pistolLength-6,-6,8,7);
+   ctx.fillStyle='#fff2bd';
+ctx.fillRect(pistolLength+1,-5,3,5);
+ctx.fillStyle='rgba(255,232,164,.8)';
+ctx.beginPath();
+ctx.moveTo(pistolLength+3,-7);
+ctx.lineTo(pistolLength+17,-4);
+ctx.lineTo(pistolLength+3,1);
+ctx.closePath();
+ctx.fill();
+ctx.restore();
+ }
+ if(f.pose==='bazooka'){
+   // Oversized shoulder-mounted rocket launcher; drawn over the torso so it cannot be hidden.
+   ctx.save();
+const launcherTier=f.player?weaponFor('bazooka').tier:0;const launcherLength=66+launcherTier*3.1;
+ctx.translate(fistX-5,fistY-12);
+ctx.rotate(-.08);
+   ctx.fillStyle='#0d1723';
+ctx.beginPath();
+ctx.roundRect(-15,-15,launcherLength,28,5);
+ctx.fill();
+   ctx.fillStyle=(f.player?weaponFor('bazooka').color:'#3c5365');
+ctx.beginPath();
+ctx.roundRect(-12,-12,launcherLength-8,20,4);
+ctx.fill();
+   ctx.fillStyle='#a4b4c1';
+ctx.fillRect(-8,-9,launcherLength-23,5);
+ctx.fillStyle='#c59a55';
+ctx.fillRect(-7,8,launcherLength-23,4);
+   ctx.fillStyle='#0a111a';
+ctx.fillRect(launcherLength-32,-17,13,32);
+ctx.fillStyle='#ff9a43';
+ctx.fillRect(launcherLength-22,-10,12,18);
+   ctx.fillStyle='#172333';
+ctx.fillRect(4,11,9,18);
+ctx.fillStyle='#8095a7';
+ctx.fillRect(2,10,13,4);
+   ctx.fillStyle='#ffda9b';
+ctx.fillRect(launcherLength-12,-6,3,10);
+ctx.fillStyle='rgba(255,143,59,.75)';
+ctx.beginPath();
+ctx.moveTo(57,-9);
+ctx.lineTo(73,-1);
+ctx.lineTo(57,5);
+ctx.closePath();
+ctx.fill();
+   ctx.restore();
+ }
+ if(f.pose==='guard'){
+ctx.strokeStyle='#83c9ff';
+ctx.lineWidth=3;
+ctx.beginPath();
+ctx.arc(18,-91,38,-1.45,1.35);
+ctx.stroke()}
+ if(f.pose==='pistol'||f.pose==='bazooka'){
+ctx.strokeStyle=f.pose==='bazooka'?'#ff9a43':'#65d9ff';
+ctx.lineWidth=f.pose==='bazooka'?6:3;
+ctx.shadowColor=f.pose==='bazooka'?'#ff7733':'#56cfff';
+ctx.shadowBlur=14;
+ctx.beginPath();
+ctx.moveTo(fistX+28,fistY-3);
+ctx.lineTo(fistX+(f.pose==='bazooka'?70:42),fistY-3);
+ctx.stroke();
+ctx.shadowBlur=0}
+ if(f.flash>0){
+ctx.globalAlpha=.35;
+ctx.fillStyle='#fff';
+ctx.beginPath();
+ctx.arc(0,-95,49,0,Math.PI*2);
+ctx.fill()}
+ ctx.restore();
+}
+function currentX(f,now){
+ let move=combatMoves.find(m=>m.fighter===f);
+ if(!move)return f.x;
+ const t=now-move.start;
+ if(t<0)return move.from;
+ if(t<move.approach)return move.from+(move.to-move.from)*(t/move.approach);
+ if(t<move.retreat)return move.to;
+ if(t<move.end){
+const k=(t-move.retreat)/(move.end-move.retreat);
+return move.to+(move.from-move.to)*k}
+ combatMoves=combatMoves.filter(m=>m!==move);
+ return move.from;
+}
+function draw(){
+ drawBackdrop();
+ // center divider and floor sigils
+ ctx.strokeStyle='rgba(245,197,107,.3)';
+ctx.lineWidth=2;
+ctx.beginPath();
+ctx.arc(450,330,60,0,Math.PI*2);
+ctx.stroke();
+ctx.beginPath();
+ctx.arc(450,330,44,0,Math.PI*2);
+ctx.stroke();
+ ctx.fillStyle='#f5c56b';
+ctx.font='bold 11px Arial';
+ctx.textAlign='center';
+ctx.fillText('DUEL',450,334);
+ const now=performance.now();
+ const fighters=[p,p2,p3,e3,e2,e].filter(Boolean);
+ const rendered=fighters.map(f=>({f,x:currentX(f,now),cy:(f===p||f===e)?-76:(f===p3||f===e3)?118:55}));
+ for(const item of rendered){
+   const f=item.f, supportAction=pendingKind==='heal'||pendingKind==='shield';
+   const canTarget=supportAction?(f===p||(['2v2','3v3'].includes(mode)&&(f===p2||f===p3))):(pendingKind?teamEnemy().includes(f):false);
+   if(canTarget&&f.hp>0){
+     const pulse=.5+.5*Math.sin(now/170);
+     ctx.save();ctx.globalAlpha=.48+.4*pulse;ctx.strokeStyle=supportAction?(pendingKind==='heal'?'#66ffae':'#65d9ff'):'#ffc86b';
+     ctx.lineWidth=3+pulse*2;ctx.shadowColor=ctx.strokeStyle;ctx.shadowBlur=12+pulse*12;
+     ctx.beginPath();ctx.ellipse(item.x,335+item.cy-70,48+pulse*3,82+pulse*3,0,0,Math.PI*2);ctx.stroke();ctx.restore();
+   }
+ drawCharacter({
+...item.f,x:item.x,cy:item.cy}
+);
+ctx.fillStyle=item.f.hp<=0?'#6c7788':item.f.player?'#8ce7ff':'#ff9da5';
+ctx.font='bold 11px Arial';
+ctx.textAlign='center';
+ctx.fillText(item.f.hp<=0?'DOWN':(item.f.name|| (item.f.player?'ALLY':'RIVAL')),item.x,375+item.cy);
+if(item.f.hp<=0){
+ctx.strokeStyle='#ff5e69';
+ctx.lineWidth=3;
+ctx.beginPath();
+ctx.moveTo(item.x-18,295+item.cy);
+ctx.lineTo(item.x+18,315+item.cy);
+ctx.moveTo(item.x+18,295+item.cy);
+ctx.lineTo(item.x-18,315+item.cy);
+ctx.stroke();
+}
+}
+ fx=fx.filter(q=>q.life>0);
+ for(const q of fx){
+  if(q.type==='floatText'){
+    const a=Math.min(1,q.life*1.8);ctx.save();ctx.globalAlpha=a;
+    const popSize=Math.max(30,Math.min(42,canvas.width*.044));
+    ctx.font=`1000 ${popSize}px Arial`;ctx.textAlign='center';ctx.lineJoin='round';ctx.lineWidth=8;ctx.strokeStyle='#050912';
+    const rise=(1-q.life/q.total)*64;ctx.strokeText(q.text,q.x,q.y-rise);
+    ctx.fillStyle=q.color;ctx.shadowColor=q.color;ctx.shadowBlur=22;ctx.fillText(q.text,q.x,q.y-rise);ctx.restore();continue;
+  }
+  if(q.type==='bullet'||q.type==='rocket'||q.type==='energy'){
+    const total=q.total||(q.type==='rocket'?1.0:q.type==='energy'?.78:.7);
+    q.progress=Math.min(1,(total-q.life)/total);
+    const xx=q.fromX+(q.toX-q.fromX)*q.progress;
+    const yy=q.fromY+(q.toY-q.fromY)*q.progress;
+    ctx.save();
+    if(q.type==='energy'){
+      const hue=q.power==='power30'?'#ff70d4':q.power==='power20'?'#8e8bff':'#65f2ff';
+      ctx.strokeStyle=hue;ctx.lineWidth=q.power==='power30'?11:8;ctx.shadowColor=hue;ctx.shadowBlur=28;
+      ctx.beginPath();ctx.moveTo(xx-(q.toX-q.fromX>0?25:-25),yy);ctx.lineTo(xx,yy);ctx.stroke();
+      ctx.fillStyle='#ffffff';ctx.beginPath();ctx.arc(xx,yy,q.power==='power30'?10:7,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle=hue;ctx.lineWidth=3;ctx.beginPath();ctx.arc(xx,yy,q.power==='power30'?15:11,0,Math.PI*2);ctx.stroke();
+    }
+    else if(q.type==='rocket'){
+      ctx.strokeStyle='#ff9a43';
+ctx.lineWidth=8;
+ctx.shadowColor='#ff6a2c';
+ctx.shadowBlur=20;
+      ctx.beginPath();
+ctx.moveTo(xx-(q.toX-q.fromX>0?36:-36),yy);
+ctx.lineTo(xx,yy);
+ctx.stroke();
+      ctx.fillStyle='#e1e8ef';
+ctx.beginPath();
+ctx.moveTo(xx+ (q.toX-q.fromX>0?12:-12),yy);
+ctx.lineTo(xx-(q.toX-q.fromX>0?9:-9),yy-8);
+ctx.lineTo(xx-(q.toX-q.fromX>0?9:-9),yy+8);
+ctx.closePath();
+ctx.fill();
+      ctx.fillStyle='#ffad55';
+ctx.beginPath();
+ctx.arc(xx,yy,7,0,Math.PI*2);
+ctx.fill();
+    }
+ else {
+      ctx.strokeStyle='#8be8ff';
+ctx.lineWidth=4;
+ctx.shadowColor='#55dfff';
+ctx.shadowBlur=16;
+      ctx.beginPath();
+ctx.moveTo(xx-(q.toX-q.fromX>0?18:-18),yy);
+ctx.lineTo(xx,yy);
+ctx.stroke();
+      ctx.fillStyle='#fff2bd';
+ctx.beginPath();
+ctx.arc(xx,yy,3.5,0,Math.PI*2);
+ctx.fill();
+    }
+    ctx.restore();
+    continue;
+  }
+  let alpha=Math.min(1,q.life*2.8);
+ctx.save();
+ctx.globalAlpha=alpha;
+  if(q.type==='beam'){
+ctx.strokeStyle='#73ddff';
+ctx.lineWidth=8;
+ctx.shadowColor='#44cfff';
+ctx.shadowBlur=18;
+ctx.beginPath();
+ctx.moveTo(q.owner==='enemy'?e.x+35:p.x+35,235);
+ctx.lineTo(q.owner==='enemy'?p.x-30:e.x-30,235);
+ctx.stroke()}
+  else if(q.type==='blast'){
+ctx.strokeStyle='#ff9b4b';
+ctx.fillStyle='rgba(255,118,45,.18)';
+ctx.lineWidth=6;
+ctx.shadowColor='#ff6a2c';
+ctx.shadowBlur=24;
+ctx.beginPath();
+ctx.arc(q.x,q.y,(1-q.life/.65)*58+12,0,Math.PI*2);
+ctx.fill();
+ctx.stroke()}
+  else {
+ctx.strokeStyle=q.type==='projectile'?'#77e8ff':'#ffd477';
+ctx.lineWidth=q.type==='projectile'?5:3;
+ctx.beginPath();
+for(let i=0;
+i<8;
+i++){
+let a=i*Math.PI/4,r=(1-q.life/.45)*40+10;
+let xx=q.x+Math.cos(a)*r,yy=q.y+Math.sin(a)*r;
+if(i===0)ctx.moveTo(xx,yy);
+else ctx.lineTo(xx,yy)}
+ctx.closePath();
+ctx.stroke()}
+  ctx.restore();
+ }
+}
+function frame(now){
+const dt=Math.min(.04,(now-last)/1000);
+last=now;
+ for(const f of [p,p2,e,e2].filter(Boolean)){
+   f.poseTime=Math.max(0,f.poseTime-dt);
+f.flash=Math.max(0,f.flash-dt);
+   if(f.poseTime===0&&f.pose!=='idle'&&f.pose!=='dash'){
+f.pose='idle'}
+ }
+ // Melee animation: dash toward the opponent, hold the strike pose, then return to the original position.
+ combatMoves=combatMoves.filter(m=>{
+   const t=now-m.start, f=m.fighter;
+   if(t<m.approach){
+     const q=Math.max(0,Math.min(1,t/m.approach));
+     f.x=m.from+(m.to-m.from)*q;
+f.pose='dash';
+   }
+else if(t<m.retreat){
+     f.x=m.to;
+f.pose=m.kind==='heavy'?'heavy':'attack';
+   }
+else if(t<m.end){
+     const q=Math.max(0,Math.min(1,(t-m.retreat)/(m.end-m.retreat)));
+     f.x=m.to+(m.from-m.to)*q;
+f.pose='dash';
+   }
+else{
+     f.x=m.from;
+f.pose='idle';
+return false;
+   }
+   return true;
+ }
+);
+ fx.forEach(q=>q.life-=dt);
+draw();
+requestAnimationFrame(frame)}
+function saveEconomy(){localStorage.setItem('epicDuelGold',String(gold));localStorage.setItem('epicDuelOwned',JSON.stringify(ownedWeapons));localStorage.setItem('epicDuelEquipped',JSON.stringify(equipped));}
+function updateWallet(){
+ ['goldAmount','townGoldAmount','shopGoldAmount'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=Math.floor(gold).toLocaleString('en-US')});
+ const sum=document.getElementById('equippedSummary');if(sum){const sw=weaponFor('sword'),pi=weaponFor('pistol'),bz=weaponFor('bazooka');sum.textContent=`⚔ ${sw.name} (+${sw.bonus}%) · 🔫 ${pi.name} (+${pi.bonus}%) · 🚀 ${bz.name} (+${bz.bonus}%)`;}
+}
+function weaponFor(category,id=equipped[category]){
+ if(!id||id.startsWith('base-'))return {id:`base-${category}`,category,tier:0,name:category==='sword'?'Basic Blade':category==='pistol'?'Basic Pistol':'Basic Launcher',bonus:0,multiplier:1,price:0,color:'#aebdcb',emoji:category==='sword'?'⚔️':category==='pistol'?'🔫':'🚀'};
+ const tier=Number(id.split('-')[1])||1;const bonus=weaponTiers[tier-1]||15;
+ return {id,category,tier,name:weaponNames[category][tier-1],bonus,multiplier:1+bonus/100,price:weaponPrice(category,tier),color:weaponColors[category][tier-1],emoji:category==='sword'?'⚔️':category==='pistol'?'🔫':'🚀'};
+}
+function weaponName(category,id){return weaponFor(category,id).name}
+function weaponMultiplier(category){return weaponFor(category).multiplier}
+function weaponPrice(category,tier){const base={pistol:250,sword:350,bazooka:500}[category];if(category==='pistol'&&tier===1)return 250;return Math.round((base+Math.pow(tier-1,1.68)*125)/10)*10;}
+function startFromLobby(selectedMode){document.getElementById('townOverlay').style.display='none';if(usedSkillPoints()!==30){document.getElementById('setupOverlay').style.display='flex';renderSkillSetup();return}findMatch(selectedMode)}
+function scheduleLobbyReturn(victory){
+ if(matchEnded)return;matchEnded=true;
+ const rewardRange=mode==='1v1'?[30,45]:['2v2','3v3'].includes(mode)?[50,60]:[55,65];
+ const reward=Math.floor(Math.random()*(rewardRange[1]-rewardRange[0]+1))+rewardRange[0];gold+=reward;saveEconomy();updateWallet();
+ const notice=document.getElementById('lobbyNotice');if(notice)notice.textContent=`${victory?'Victory':'Defeat'} · Match reward: +${reward} gold. Choose your next mode or visit the merchant.`;
+ setTimeout(()=>{
+   document.getElementById('townOverlay').style.display='flex';
+   document.getElementById('shopOverlay').style.display='none';
+   document.getElementById('modeSelectOverlay').style.display='none';
+   document.getElementById('setupOverlay').style.display='none';
+   updateWallet();
+ },2200);
+}
+function openShop(){renderShop();document.getElementById('shopOverlay').style.display='flex'}
+function closeShop(){document.getElementById('shopOverlay').style.display='none';document.getElementById('townOverlay').style.display='flex'}
+function renderShop(){
+ updateWallet();document.querySelectorAll('[data-shop-tab]').forEach(b=>b.classList.toggle('active',b.dataset.shopTab===shopCategory));
+ const intro=document.getElementById('shopIntro');intro.textContent=shopCategory==='sword'?'Forged blades increase sword-strike and heavy-sword damage. Each tier changes blade colour and trim.':shopCategory==='pistol'?'Precision sidearms improve pistol damage. The entry-level pistol costs 250 gold and adds 15% damage.':'Heavy launchers improve bazooka damage. Higher tiers feature stronger shells and distinct finishes.';
+ const grid=document.getElementById('shopGrid');grid.innerHTML='';
+ for(let tier=1;tier<=10;tier++){
+  const id=`${shopCategory}-${tier}`,item=weaponFor(shopCategory,id),isOwned=ownedWeapons.includes(id),isEquipped=equipped[shopCategory]===id,baseOwned=equipped[shopCategory]===`base-${shopCategory}`;
+  const card=document.createElement('article');card.className='shop-item'+(isEquipped?' equipped':'');
+  const preview=document.createElement('div');preview.className='weapon-preview';preview.style.setProperty('--weapon-color',item.color);const em=document.createElement('span');em.textContent=item.emoji;em.style.color=item.color;preview.appendChild(em);
+  const body=document.createElement('div');const title=document.createElement('h3');title.textContent=item.name;const desc=document.createElement('p');desc.textContent=`Tier ${tier} · ${shopCategory==='sword'?'Melee weapon':shopCategory==='pistol'?'Sidearm':'Area weapon'}`;const stats=document.createElement('div');stats.className='item-stats';stats.textContent=`+${item.bonus}% damage · ${item.price.toLocaleString('en-US')} gold`;
+  const button=document.createElement('button');
+  if(isEquipped){button.textContent='✓ EQUIPPED';button.disabled=true;button.className='equip-state'}
+  else if(isOwned){button.textContent='EQUIP';button.onclick=()=>{equipped[shopCategory]=id;saveEconomy();renderShop();updateWallet();if(p)p.equipped={...equipped}}}
+  else {button.textContent=`BUY · ${item.price.toLocaleString('en-US')} G`;button.disabled=gold<item.price;button.onclick=()=>{if(gold<item.price)return;gold-=item.price;ownedWeapons.push(id);equipped[shopCategory]=id;saveEconomy();renderShop();updateWallet();if(p)p.equipped={...equipped}}}
+  body.append(title,desc,stats,button);card.append(preview,body);grid.appendChild(card);
+ }
+}
+function renderSkillSetup(){
+ const left=30-usedSkillPoints();document.getElementById('pointsLeft').textContent=left;
+ for(const key of skillNames){
+  document.getElementById('lvl-'+key).textContent=skillPoints[key];
+  document.querySelector(`[data-add="${key}"]`).disabled=left<=0;
+  document.querySelector(`[data-remove="${key}"]`).disabled=skillPoints[key]<=0;
+ }
+ document.getElementById('startBattle').disabled=left!==0;
+ document.getElementById('startBattle').textContent=left===0?'SAVE BUILD & RETURN TO TOWN HALL':`${left} MORE POINTS TO ALLOCATE`;
+}
+document.querySelectorAll('[data-add]').forEach(btn=>btn.addEventListener('click',()=>{const k=btn.dataset.add;if(usedSkillPoints()<30){skillPoints[k]++;renderSkillSetup()}}));
+document.querySelectorAll('[data-remove]').forEach(btn=>btn.addEventListener('click',()=>{const k=btn.dataset.remove;if(skillPoints[k]>0){skillPoints[k]--;renderSkillSetup()}}));
+document.getElementById('resetSkills').onclick=()=>{for(const k of skillNames)skillPoints[k]=0;renderSkillSetup()};
+document.getElementById('autoSkills').onclick=()=>{for(const k of skillNames)skillPoints[k]=0;const build=['health','damage','mana','shield','lifesteal'];for(let i=0;i<30;i++)skillPoints[build[i%build.length]]++;renderSkillSetup()};
+document.getElementById('startBattle').onclick=()=>{if(usedSkillPoints()!==30)return;skillSetupDone=true;document.getElementById('setupOverlay').style.display='none';document.getElementById('townOverlay').style.display='flex';updateWallet();message('BUILD SAVED','Your 30-point build is saved. Choose a battle mode from the Town Hall.');};
+function selectAction(kind){
+ if(turnBusy||over)return;
+ if(kind==='defend'){pendingKind=null;document.querySelectorAll('.buttons button').forEach(b=>b.classList.remove('skill-selected'));playerMove(kind);return;}
+ // A solo Juggernaut has no ally to target: healing immediately selects the champion.
+ if(kind==='heal'&&mode==='juggernaut'){
+   supportKey='p';clearActionSelection();playerMove('heal');return;
+ }
+ const enemies=alive(teamEnemy());
+ // When only one rival remains, resolve target selection automatically like a 1v1 duel.
+ if(kind!=='heal'&&kind!=='shield'&&enemies.length===1){
+   targetKey=enemies[0]===e3?'e3':enemies[0]===e2?'e2':'e';refresh();clearActionSelection();playerMove(kind,targetKey);return;
+ }
+ pendingKind=kind;
+ document.querySelectorAll('.buttons button').forEach(b=>b.classList.toggle('skill-selected',b.id===kind));
+ const hint=document.getElementById('actionHint');
+ if(kind==='heal'||kind==='shield')hint.textContent=`${kind==='heal'?'HEAL':'SHIELD'} selected. Click yourself or a living ally on the LEFT side of the arena.`;
+ else hint.textContent=`${document.getElementById(kind).querySelector('.btnname').textContent} selected. Click a living rival on the RIGHT side of the arena.`;
+ message('ACTION SELECTED',`${document.getElementById(kind).querySelector('.btnname').textContent} is active. Now choose a target.`);
+}
+function clearActionSelection(){pendingKind=null;document.querySelectorAll('.buttons button').forEach(b=>b.classList.remove('skill-selected'));const hint=document.getElementById('actionHint');if(hint)hint.textContent='Action complete. Choose another action, then click a target.';}
+document.getElementById('attack').onclick=()=>selectAction('attack');
+document.getElementById('heavy').onclick=()=>selectAction('heavy');
+document.getElementById('special').onclick=()=>selectAction('special');
+document.getElementById('bazooka').onclick=()=>selectAction('bazooka');
+document.getElementById('defend').onclick=()=>selectAction('defend');
+document.getElementById('heal').onclick=()=>selectAction('heal');
+document.getElementById('shield').onclick=()=>selectAction('shield');
+document.getElementById('power15').onclick=()=>selectAction('power15');
+document.getElementById('power20').onclick=()=>selectAction('power20');
+document.getElementById('power30').onclick=()=>selectAction('power30');
+document.getElementById('restart').onclick=reset;
+document.getElementById('mode1').onclick=()=>showModeSelect();
+document.getElementById('mode2').onclick=()=>showModeSelect();
+document.getElementById('modeJ').onclick=()=>showModeSelect();
+function enterFullscreen(){const root=document.documentElement;if(!document.fullscreenElement&&root.requestFullscreen){root.requestFullscreen().catch(()=>{});}}
+document.getElementById('fullscreenBtn').onclick=enterFullscreen;
+document.addEventListener('fullscreenchange',()=>{const b=document.getElementById('fullscreenBtn');if(b)b.textContent=document.fullscreenElement?'⛶ FULLSCREEN ACTIVE':'⛶ ENTER FULLSCREEN';});
+function showModeSelect(){document.getElementById('modeSelectOverlay').style.display='flex';}
+// Local prototype matchmaking: randomized 3–6 second queue, then AI opponents (no online server connection).
+function findMatch(selectedMode){
+ if(turnBusy)return;mode=selectedMode;enterFullscreen();
+ const overlay=document.getElementById('matchOverlay');const status=document.getElementById('matchStatus');const details=document.getElementById('matchDetails');const count=document.getElementById('matchCount');
+ document.getElementById('modeSelectOverlay').style.display='none';overlay.style.display='flex';status.textContent='SEARCHING FOR OPPONENTS';details.textContent='Finding a suitable match…';
+ const wait=3000+Math.random()*3000;const started=performance.now();count.textContent='';
+ const tick=()=>{const left=Math.max(0,wait-(performance.now()-started));if(left>0){requestAnimationFrame(tick);return;}status.textContent='MATCH FOUND';details.textContent='Opponents found. Preparing the arena…';setTimeout(()=>{overlay.style.display='none';document.getElementById('townOverlay').style.display='none';document.getElementById('shopOverlay').style.display='none';document.querySelector('.app').style.visibility='visible';reset();},650);};tick();
+}
+document.querySelectorAll('[data-mode]').forEach(btn=>btn.addEventListener('click',()=>findMatch(btn.dataset.mode)));
+document.getElementById('targetE').onclick=()=>{
+if(!turnBusy&&e.hp>0){
+targetKey='e';refresh();
+if(pendingKind&&pendingKind!=='heal'&&pendingKind!=='shield'){const k=pendingKind;clearActionSelection();playerMove(k,'e')}else message('TARGET SELECTED','Rival 1 targeted.');
+}
+}
+;
+document.getElementById('supportP').onclick=()=>{if(!turnBusy&&!over){supportKey='p';refresh();if(pendingKind==='heal'||pendingKind==='shield'){const k=pendingKind;clearActionSelection();playerMove(k)}}};
+document.getElementById('supportP3').onclick=()=>{if(!turnBusy&&!over&&mode==='3v3'&&p3&&p3.hp>0){supportKey='p3';refresh();if(pendingKind==='heal'||pendingKind==='shield'){const k=pendingKind;clearActionSelection();playerMove(k)}}};
+document.getElementById('supportP2').onclick=()=>{if(!turnBusy&&!over&&['2v2','3v3'].includes(mode)&&p2&&p2.hp>0){supportKey='p2';refresh();if(pendingKind==='heal'||pendingKind==='shield'){const k=pendingKind;clearActionSelection();playerMove(k)}}};
+document.getElementById('targetE3').onclick=()=>{if(!turnBusy&&!over&&e3&&e3.hp>0){targetKey='e3';refresh();if(pendingKind&&pendingKind!=='heal'&&pendingKind!=='shield'){const k=pendingKind;clearActionSelection();playerMove(k,'e3')}else message('TARGET SELECTED','Rival 3 targeted.')}};
+document.getElementById('targetE2').onclick=()=>{
+if(!turnBusy&&e2&&e2.hp>0){
+targetKey='e2';refresh();
+if(pendingKind&&pendingKind!=='heal'&&pendingKind!=='shield'){const k=pendingKind;clearActionSelection();playerMove(k,'e2')}else message('TARGET SELECTED','Rival 2 targeted.');
+}
+}
+;
+function pickFighterAtCanvas(cx,cy,candidates){
+ const living=alive(candidates);
+ if(!living.length)return null;
+ const scored=living.map(f=>{
+   const lower=f===p2||f===e2; const third=f===p3||f===e3;
+   const centerY=335+(third?118:lower?55:-76)-82;
+   const dx=(cx-f.x),dy=(cy-centerY)*.72;
+   return {f,score:dx*dx+dy*dy,dx,dy};
+ }).sort((a,b)=>a.score-b.score);
+ const best=scored[0];
+ return Math.abs(best.dx)<=110&&Math.abs(best.dy)<=145?best.f:null;
+}
+canvas.addEventListener('mousemove',event=>{
+ const rect=canvas.getBoundingClientRect();
+ const cx=(event.clientX-rect.left)*canvas.width/rect.width;
+ const cy=(event.clientY-rect.top)*canvas.height/rect.height;
+ const supportAction=pendingKind==='heal'||pendingKind==='shield';
+ const validSide=supportAction?cx<450:cx>=450;
+ const validLower=cy>300;
+ const validTarget=supportAction
+   ? pickFighterAtCanvas(cx,cy,teamPlayer())
+   : pickFighterAtCanvas(cx,cy,teamEnemy());
+ canvas.style.cursor=(pendingKind&&validSide&&validTarget&&validTarget.hp>0&&!turnBusy&&!over)?'crosshair':'default';
+});
+canvas.addEventListener('click',event=>{
+ if(turnBusy||over)return;
+ const rect=canvas.getBoundingClientRect();
+ const cx=(event.clientX-rect.left)*canvas.width/rect.width;
+ const cy=(event.clientY-rect.top)*canvas.height/rect.height;
+ const supportAction=pendingKind==='heal'||pendingKind==='shield';
+ // Support abilities can only target your own side. Juggernaut has no ally, so its heal is self-cast.
+ if(supportAction){
+   if(cx>=450){message('INVALID TARGET','Healing and shielding can only target your own team.');return;}
+   const recipient=pickFighterAtCanvas(cx,cy,teamPlayer());
+   if(!recipient||recipient.hp<=0){message('INVALID TARGET','Click directly on yourself or a living ally.');return;}
+   supportKey=recipient===p2?'p2':'p';refresh();
+   const kind=pendingKind;clearActionSelection();playerMove(kind);return;
+ }
+ // Offensive actions can only target living rivals on the right side.
+ if(cx<450){message('INVALID TARGET','Attack skills can only target rivals on the right side.');return;}
+ canvas.style.cursor='crosshair';
+ const target=pickFighterAtCanvas(cx,cy,teamEnemy());
+ if(!target||target.hp<=0){message('INVALID TARGET','Click directly on a living rival.');return;}
+ const chosen=target===e3?'e3':target===e2?'e2':'e';targetKey=chosen;refresh();
+ if(pendingKind){const kind=pendingKind;clearActionSelection();playerMove(kind,chosen);}
+ else message('TARGET SELECTED',`${target.name} selected as target.`);
+});
+
+function drawTownHall(now){
+ const c=townCtx,w=townCanvas.width,h=townCanvas.height;
+ const sky=c.createLinearGradient(0,0,0,h);sky.addColorStop(0,'#243f53');sky.addColorStop(.52,'#182d3c');sky.addColorStop(1,'#0b1721');c.fillStyle=sky;c.fillRect(0,0,w,h);
+ // Grand vaulted hall, tall stone arches, stained glass and warm sconces.
+ c.fillStyle='#142636';c.beginPath();c.moveTo(0,0);c.lineTo(0,410);c.quadraticCurveTo(180,40,360,410);c.lineTo(360,0);c.closePath();c.fill();
+ c.fillStyle='#1b3141';c.beginPath();c.moveTo(300,0);c.lineTo(300,390);c.quadraticCurveTo(600,20,900,390);c.lineTo(900,0);c.closePath();c.fill();
+ c.fillStyle='#142636';c.beginPath();c.moveTo(840,0);c.lineTo(840,410);c.quadraticCurveTo(1020,40,1200,410);c.lineTo(1200,0);c.closePath();c.fill();
+ for(let i=0;i<5;i++){
+  const x=65+i*270;c.fillStyle='#344c5a';c.fillRect(x,100,24,320);c.fillStyle='#5a6c70';c.fillRect(x-8,95,40,12);c.fillRect(x-8,410,40,14);
+  c.fillStyle=i%2?'#6db8c8':'#e4b66e';c.globalAlpha=.23;c.fillRect(x+7,145,10,125);c.globalAlpha=1;
+  c.fillStyle='#ffca75';c.shadowColor='#ffb74c';c.shadowBlur=18;c.beginPath();c.arc(x+12,125,7+Math.sin(now/230+i)*2,0,Math.PI*2);c.fill();c.shadowBlur=0;
+ }
+ // The central guild crest and wall signage.
+ c.fillStyle='#263d4a';c.beginPath();c.roundRect(455,58,290,110,12);c.fill();c.strokeStyle='#c6a76c';c.lineWidth=3;c.stroke();
+ c.fillStyle='#f4d18a';c.font='900 23px Arial';c.textAlign='center';c.fillText('DUELISTS GUILD',600,102);c.font='12px Arial';c.fillStyle='#b9d3dc';c.fillText('STRENGTH · HONOUR · GLORY',600,127);
+ // Stone-tile floor with a perspective grid.
+ const floor=c.createLinearGradient(0,365,0,h);floor.addColorStop(0,'#41515a');floor.addColorStop(1,'#192833');c.fillStyle=floor;c.fillRect(0,365,w,h-365);
+ c.strokeStyle='rgba(186,204,201,.17)';c.lineWidth=1;
+ for(let i=0;i<=12;i++){const x=i*100;c.beginPath();c.moveTo(600+(x-600)*.22,365);c.lineTo(x,h);c.stroke()}
+ for(let y=390;y<h;y+=36){c.beginPath();c.moveTo(0,y);c.lineTo(w,y);c.stroke()}
+ // Merchant counters, training rack, plants and benches bring life to the hub.
+ c.fillStyle='#3c3026';c.fillRect(70,365,155,42);c.fillStyle='#8e633d';c.fillRect(62,356,171,16);c.fillStyle='#c6a56d';c.fillRect(77,342,140,12);c.fillStyle='#d6bd7d';c.font='bold 13px Arial';c.fillText('GEAR & RELICS',147,333);
+ c.fillStyle='#3b2c24';c.fillRect(975,365,150,38);c.fillStyle='#86603c';c.fillRect(965,355,170,16);c.fillStyle='#c4a06a';c.font='bold 13px Arial';c.fillText('TRAINING BOARD',1050,333);
+ for(const x of [35,1160]){c.fillStyle='#285344';c.beginPath();c.arc(x,365,28,0,Math.PI*2);c.fill();c.fillStyle='#4b8064';for(let j=0;j<5;j++){c.beginPath();c.ellipse(x+Math.cos(j*1.25)*16,350+Math.sin(j*1.25)*15,8,18,j*1.25,0,Math.PI*2);c.fill()}}
+ // Walking duelists move between stations on deterministic, looping paths.
+ const people=[
+  {name:'YOU',color:'#49bdd9',dark:'#174d69',x:600,y:500,rx:0,ry:0,hero:true},
+  {name:'MIRA',color:'#ce8ce8',dark:'#563b70',x:300,y:475,rx:170,ry:44,phase:.2,speed:.00055},
+  {name:'ROOK',color:'#e2a45e',dark:'#74462a',x:875,y:480,rx:145,ry:35,phase:2.2,speed:.00042},
+  {name:'KAI',color:'#7bd3a5',dark:'#245e4a',x:465,y:445,rx:115,ry:28,phase:4.1,speed:.00062},
+  {name:'NYX',color:'#ef858c',dark:'#7d303f',x:740,y:445,rx:120,ry:28,phase:5.1,speed:.00048},
+  {name:'VEX',color:'#a9b5d5',dark:'#404e70',x:190,y:500,rx:85,ry:20,phase:1.1,speed:.0005}
+ ];
+ for(const a of people){
+  const x=a.hero?a.x:a.x+Math.sin(now*a.speed+a.phase)*a.rx;const y=a.hero?a.y:a.y+Math.sin(now*a.speed*1.7+a.phase)*a.ry;
+  const step=Math.sin(now/115+a.phase||0);const scale=a.hero?1.15:.9;
+  c.save();c.translate(x,y);c.scale(scale,scale);
+  c.fillStyle='#07101977';c.beginPath();c.ellipse(0,3,25,8,0,0,Math.PI*2);c.fill();
+  // legs with alternating stride
+  c.lineCap='round';c.lineWidth=9;c.strokeStyle=a.dark;c.beginPath();c.moveTo(-7,-26);c.lineTo(-10+step*5,-9);c.lineTo(-13+step*8,0);c.moveTo(7,-26);c.lineTo(10-step*5,-9);c.lineTo(13-step*8,0);c.stroke();
+  c.fillStyle=a.dark;c.beginPath();c.ellipse(-14+step*8,0,10,4,-.1,0,Math.PI*2);c.ellipse(14-step*8,0,10,4,.1,0,Math.PI*2);c.fill();
+  c.fillStyle=a.color;c.beginPath();c.moveTo(-14,-55);c.lineTo(13,-55);c.lineTo(19,-29);c.lineTo(10,-24);c.lineTo(-12,-24);c.lineTo(-20,-31);c.closePath();c.fill();
+  c.fillStyle=a.dark;c.fillRect(-22,-52,9,24);c.fillRect(13,-52,9,24);
+  c.fillStyle='#d5b17c';c.beginPath();c.arc(0,-67,12,0,Math.PI*2);c.fill();
+  c.fillStyle=a.dark;c.beginPath();c.arc(0,-72,13,Math.PI,Math.PI*2);c.fill();c.fillRect(-13,-72,5,10);
+  c.strokeStyle='#e6d4a7';c.lineWidth=3;c.beginPath();c.moveTo(0,-47);c.lineTo(0,-30);c.stroke();
+  if(a.hero){c.strokeStyle='#d9e8f1';c.lineWidth=3;c.beginPath();c.moveTo(19,-47);c.lineTo(32,-65);c.stroke();c.fillStyle='#eaf4ff';c.beginPath();c.arc(32,-65,3,0,Math.PI*2);c.fill();}
+  c.fillStyle=a.hero?'#fff0b0':'#d7e4ed';c.font=`bold ${a.hero?14:11}px Arial`;c.textAlign='center';c.fillText(a.name,0,-87);c.restore();
+ }
+ // A subtle pulsing circle marks the player character.
+ const pulse=18+Math.sin(now/240)*3;c.strokeStyle='rgba(104,224,255,.7)';c.lineWidth=2;c.beginPath();c.ellipse(600,500,pulse,6,0,0,Math.PI*2);c.stroke();
+}
+function townFrame(now){drawTownHall(now);requestAnimationFrame(townFrame)}
+document.getElementById('townBuild').onclick=()=>{document.getElementById('townOverlay').style.display='none';document.getElementById('setupOverlay').style.display='flex';renderSkillSetup()};
+// Removed a stale handler for a button that no longer exists; it previously threw a TypeError and prevented all lobby/shop handlers below from registering.
+document.getElementById('townMode1').onclick=()=>startFromLobby('1v1');
+document.getElementById('townMode2').onclick=()=>startFromLobby('2v2');
+document.getElementById('townModeJ').onclick=()=>startFromLobby('juggernaut');
+document.getElementById('townMerchant').onclick=openShop;
+document.getElementById('closeShop').onclick=closeShop;
+document.getElementById('shopBackToLobby').onclick=closeShop;
+
+// Fighter level badges open a transparent breakdown of level and spent skill points.
+const fighterBuilds={p:{level:30,points:{...skillPoints}},p2:{level:12,points:{damage:3,health:3,shield:2,lifesteal:1,mana:2,defense:1}},p3:{level:12,points:{damage:4,health:2,shield:2,lifesteal:1,mana:2,defense:1}},e:{level:12,points:{damage:4,health:3,shield:2,lifesteal:1,mana:1,defense:1}},e2:{level:12,points:{damage:3,health:4,shield:2,lifesteal:1,mana:1,defense:1}},e3:{level:12,points:{damage:4,health:3,shield:1,lifesteal:1,mana:2,defense:1}}};
+const info=document.getElementById('fighterInfo');
+function showFighterInfo(key,anchor){const f=({p,p2,p3,e,e2,e3})[key];if(!f)return;const points=f===p?skillPoints:(fighterBuilds[key]?.points||{});const level=f===p?Math.max(1,usedSkillPoints()):fighterBuilds[key]?.level||12;const labels={damage:'Base Damage',health:'Health',shield:'Shield',lifesteal:'Lifesteal',mana:'Max Mana',defense:'Defense'};let spent=Object.values(points).reduce((a,b)=>a+(Number(b)||0),0);info.innerHTML=`<h3>${f.name} · LEVEL ${level}</h3><div>Skill points spent: <b>${spent}</b></div><ul>${Object.entries(labels).map(([k,label])=>`<li>${label}: <b>${points[k]||0}</b> point(s)</li>`).join('')}</ul><button id="closeFighterInfo">CLOSE</button>`;const r=anchor.getBoundingClientRect();info.style.left=Math.min(innerWidth-260,Math.max(8,r.left))+'px';info.style.top=Math.min(innerHeight-220,Math.max(8,r.bottom+6))+'px';info.style.display='block';document.getElementById('closeFighterInfo').onclick=()=>info.style.display='none';}
+document.querySelectorAll('.fighter-level').forEach(el=>el.addEventListener('click',()=>showFighterInfo(el.dataset.fighter,el)));document.addEventListener('click',ev=>{if(!info.contains(ev.target)&&!ev.target.classList.contains('fighter-level'))info.style.display='none'});
+// Each action receives its own small inline SVG mark rather than relying on emoji glyphs.
+const skillSVG={attack:'<path d="M5 27 25 7m-5 0h5v5M4 20l8 8M3 17l4-4 8 8-4 4z"/><path d="m20 3 8 8"/>',heavy:'<path d="M16 3 19 12 28 15 19 18 16 27 13 18 4 15 13 12z"/>',special:'<path d="M5 12h14l6 4v6H8l-3-4z"/><path d="M10 12V8h7v4M8 22v4m11-4v4"/>',bazooka:'<path d="m4 20 15-15 5 5-15 15z"/><path d="m15 9 5 5M3 24l5 5M19 5l4-3 6 6-3 4"/>',defend:'<path d="M16 3 27 7v8c0 6-5 10-11 14C10 25 5 21 5 15V7z"/><path d="m10 16 4 4 8-9"/>',heal:'<path d="M12 4h8v8h8v8h-8v8h-8v-8H4v-8h8z"/>',shield:'<path d="M16 3 27 7v8c0 6-5 10-11 14C10 25 5 21 5 15V7z"/><path d="M16 7v16"/>',power15:'<path d="M18 2 7 17h8l-2 13 11-17h-8z"/>',power20:'<path d="M19 2 8 16h8l-2 14 11-18h-8z"/><path d="m4 7 3 3m18 13 3 3"/>',power30:'<circle cx="16" cy="16" r="12"/><path d="M18 3 10 16h7l-3 13 11-17h-7z"/>'};
+for(const [id,path] of Object.entries(skillSVG)){const icon=document.querySelector(`#${id} .icon`);if(icon)icon.innerHTML=`<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg>`;}
+function syncSkillButtonStats(){const base=10+skillBonusDamage();const sword=weaponMultiplier('sword');const stats={attack:`0 MP · ~${Math.round(base*sword)} dmg`,heavy:`16 MP · ~${Math.round(base*1.5*sword)} dmg`,defend:'0 MP · reduce damage',heal:'0 MP · restore HP',shield:'0 MP · gain shield',power15:`15 MP · ~${Math.round(base*1.5*sword)} dmg`,power20:`20 MP · ~${Math.round(base*1.75*sword)} dmg`,power30:`30 MP · ~${Math.round(base*1.1*sword)} × all`,special:`0 MP · ~${Math.round(17*weaponMultiplier('pistol'))} dmg`,bazooka:`0 MP · ~${Math.round(21*weaponMultiplier('bazooka'))} dmg`};for(const [id,text] of Object.entries(stats)){const el=document.querySelector(`#${id} .detail`);if(el&&!['special','bazooka'].includes(id))el.textContent=text;}}
+syncSkillButtonStats();
+
+document.querySelectorAll('[data-shop-tab]').forEach(btn=>btn.addEventListener('click',()=>{shopCategory=btn.dataset.shopTab;renderShop()}));
+renderSkillSetup();
+updateWallet();
+reset();
+document.getElementById('setupOverlay').style.display='none';
+document.getElementById('modeSelectOverlay').style.display='none';
+requestAnimationFrame(frame);requestAnimationFrame(townFrame);
+}
+)();
+
+/*
+IMPLEMENTATION GUIDE — EPIC-DUEL-INSPIRED PROTOTYPE
+==================================================
+
+COMBAT RULES
+------------
+1. Sword Strike is a free basic melee action.
+2. Heavy Sword consumes energy and uses the melee lunge animation.
+3. Pistol is equipment, not a mana skill. It consumes no energy.
+4. Bazooka is equipment, not a mana skill. It consumes no energy.
+5. Pistol and bazuka attacks keep the attacker at their original x-coordinate.
+6. Melee actions use combatMoves; ranged actions never enter that array.
+7. The pistol cooldown is tracked separately from the bazooka cooldown.
+8. A cooldown label is shown directly on the corresponding action button.
+9. The rival uses the same stationary ranged-attack principle.
+10. The round ends only after the chosen action has resolved.
+11. Every fighter has a 5% critical chance, 5% full-block chance, and 5% defensive-reduction chance.
+12. Below 25% health, a fighter enters Rage and deals 120%–150% bonus damage. Critical multipliers apply after Rage.
+13. Lifesteal restores 3% of damage dealt per skill point.
+14. If only one rival remains alive, offensive actions auto-select that rival.
+
+VISUAL SYSTEMS
+--------------
+- The arena is rendered on a canvas so the whole duel scales to the viewport.
+- The game opens in an animated Town Hall social hub with roaming duelists.
+- Character armor uses layered polygons and rounded metal plates.
+- The back rig remains visible while the character is idle.
+- The bazooka is drawn over the character's body while being aimed.
+- The pistol is drawn in the hand after the holster-draw pose starts.
+- Projectiles are represented by a moving position between launch and impact.
+- Bullets use a small cyan tracer; rockets use a larger orange exhaust trail.
+- A bazooka impact uses an expanding blast ring.
+- Melee animations interpolate toward a strike position and then retreat.
+- The opponent has an independent turn delay so it does not respond instantly.
+
+MAINTENANCE NOTES
+-----------------
+When adding new ranged equipment, add its cooldown state, action button,
+weapon pose, projectile type, and damage rule independently. Do not add it
+to combatMoves: that list is exclusively for attacks that physically close
+the distance to the opponent. Keep the shooter stationary and animate only
+the arm, held equipment, muzzle flash, projectile, and impact effect.
+
+TEAM BATTLE SYSTEM — 2 VS 2
+--------------------------
+- The default match is a four-fighter team battle.
+- A mode switch can return to the classic one-versus-one duel at any time
+  when no turn is being resolved.
+- The two player-side fighters have separate health and energy values.
+- Both enemy fighters have separate health and energy values.
+- Target buttons allow the player to focus either rival.
+- A defeated enemy is automatically skipped as a target.
+- A defeated teammate is not revived during the current battle.
+- Victory is awarded only after the entire opposing team is down.
+- Defeat occurs only after all player-side fighters are down.
+- The ally chooses a living opponent and acts automatically after the player.
+- The ally uses a sword at close distance and a pistol at long distance.
+- Enemy turns are serialized: the first surviving enemy acts, then the second.
+- The AI chooses a living player-side target based on current distance.
+- Ranged weapons never create melee movement records.
+- Melee movement records retain their own fighter reference and home x value.
+- Health panels are refreshed for all four combatants after damage.
+- The active target controls the player's selected attacks only; the ally
+  independently chooses the closest living enemy.
+- The one-versus-one mode hides the second target and resets all combat state.
+- Each reset clears projectiles, animation queues, cooldowns and turn counters.
+- Team members retain individual poses, guard state, energy and hit flashes.
+- UI target controls are disabled while a turn is in progress.
+- AI callbacks check for match completion before applying damage.
+
+VISUAL READABILITY AND TEAM IDENTITY
+-----------------------------------
+- Cyan labels identify the player's team; coral labels identify opponents.
+- A downed fighter remains on the battlefield as a visual reminder of the
+  result, but is ignored by target selection and AI logic.
+- Each combatant's health and energy are represented independently above the
+  arena, so team members cannot accidentally share damage state.
+- The arena rendering order places the two inner fighters before the two
+  outer fighters, keeping silhouettes readable in the compact canvas.
+- The target panel displays remaining combatants on each side.
+- Team battle is the default mode because it is the newly requested mode.
+
+TEST CHECKLIST
+--------------
+1. Start the page: four cards and four combatants should be visible.
+2. Click Rival 2 and use a sword: the player rushes toward Rival 2 and returns.
+3. Use pistol: the player stays still and a bullet crosses the arena.
+4. Use bazooka: the player stays still, shoulders the launcher, and fires.
+5. Watch the ally: it chooses a living enemy and acts without extra input.
+6. Defeat one rival: its target button becomes disabled.
+7. Defeat both rivals: the victory message appears and controls lock.
+8. Switch to 1v1: the extra ally/enemy panels and target controls are hidden.
+9. Restart: health, energy, cooldowns, projectiles and team members reset.
+10. Switch back to 2v2: all four fighters are recreated at full health.
+
+The line count below includes the complete HTML, CSS, JavaScript, and this
+implementation guide. The extra source formatting is intended to make the
+prototype easier to inspect and extend, rather than to pad the game with
+unrelated code.
+*/
+
+
+
+/*
+SKILL POINTS AND DAMAGE SYSTEM — EXTENDED DESIGN NOTES
+=====================================================
+- A match opens with a 30-point allocation screen. The player must spend all
+  points before entering combat; the reset button clears the allocation.
+- Balanced allocation rotates across health, damage, mana, shield and lifesteal.
+- Health begins at 100 before investment. Each health point adds five maximum HP.
+- Maximum mana begins at 100. Each mana point adds five maximum mana.
+- Basic sword damage has a mean of 10 and a random ±10% roll.
+- Heavy sword damage has a mean of 15 and a random ±10% roll, and costs 16 energy.
+- Pistol damage has a mean of 17 and a random ±10% roll; its cooldown is two player turns.
+- Bazooka damage has a mean of 21 and a random ±10% roll; its secondary blast deals
+  half of a separately rolled bazooka hit to the other living opponent.
+- Equipment attacks cost no mana. Ranged attacks do not move the attacker.
+- Lifesteal restores a percentage of actual HP damage after shield absorption.
+- Shield absorbs damage before HP and can be replenished by the shield action.
+- Healing cannot exceed maximum HP. Shield action stacks only up to its cap.
+- The two sides are visually arranged as vertical pairs: one fighter above another.
+- Target selection only affects the player's direct target. Bazooka splash is automatic.
+- Defeated fighters remain visible in the arena but are no longer valid targets.
+- The team wins only when all opposing fighters are down; defeat occurs when all
+  player-side fighters are down.
+*/
+
+
+
+/*
+TARGETING AND ANIMATION UPDATE NOTES
+====================================
+- Heal and Shield are now target-first actions: choose the ability, then click a
+  living member of the player team in the left lane of the arena.
+- Rival silhouettes are never accepted as support targets. The target-side check
+  happens before the ability is committed, so an invalid click does not consume a turn.
+- Juggernaut has no ally. Selecting Heal in that mode immediately self-casts and
+  does not ask for a target click.
+- Damage/heal popups are placed above each fighter's head and use a large font,
+  thick contrast outline, glow, upward motion, and a longer visibility window.
+- The fighter rig now uses articulated hip/knee/ankle and shoulder/elbow/wrist
+  joints, layered armor plates, boot shapes, finger grooves, and pose-specific limb
+  positions for melee, heavy strike, ranged fire, guard, and healing.
+- On short landscape displays, status cards share one compact row and action
+  controls collapse vertically so the actual battlefield receives more screen area.
+*/
+
+</script>
+
+<script>
+/* Mobile viewport/orientation resilience: keep the battle dock and canvases in view. */
+(()=>{
+ const root=document.documentElement;
+ const arenaCanvas=document.getElementById('arenaHealthvas');
+ const townCanvas=document.getElementById('townCanvas');
+ let resizeFrame=0;
+ function syncMobileViewport(){
+   cancelAnimationFrame(resizeFrame);
+   resizeFrame=requestAnimationFrame(()=>{
+     const vv=window.visualViewport;
+     const height=Math.max(1,Math.round(vv?vv.height:window.innerHeight));
+     root.style.setProperty('--live-vh',`${height}px`);
+     document.body.style.setProperty('--safe-bottom','env(safe-area-inset-bottom, 0px)');
+     // Reading layout after rotation forces browsers to recalculate grid tracks.
+     const app=document.querySelector('.app');
+     if(app){app.style.minHeight=`${height}px`;app.style.height=`${height}px`;}
+     for(const canvas of [arenaCanvas,townCanvas]){
+       if(!canvas)continue;
+       canvas.style.maxWidth='100%';
+       canvas.style.maxHeight='100%';
+     }
+     const buttons=document.querySelector('.buttons');
+     if(buttons){
+       buttons.style.maxWidth='100%';
+       buttons.querySelectorAll('button').forEach(button=>{button.style.minWidth='0';});
+     }
+   });
+ }
+ window.addEventListener('resize',syncMobileViewport,{passive:true});
+ window.addEventListener('orientationchange',()=>setTimeout(syncMobileViewport,80),{passive:true});
+ if(window.visualViewport)window.visualViewport.addEventListener('resize',syncMobileViewport,{passive:true});
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncMobileViewport();});
+ window.addEventListener('pageshow',syncMobileViewport,{passive:true});
+ syncMobileViewport();
+})();
+</script>
+
+<button id="layoutToggle" class="layout-toggle" type="button" aria-label="Change game layout">LAYOUT: AUTO</button>
+<style>
+/* Manual layout selector: never locks or rotates the physical device. */
+.layout-toggle{position:fixed;right:8px;top:8px;z-index:1500;padding:7px 10px;min-height:30px;border:2px solid #f1d18a;border-radius:10px;background:linear-gradient(#45634b,#213c2b);color:#fff3c7;font:900 10px system-ui;letter-spacing:.4px;box-shadow:0 3px 0 #171d13,0 3px 12px #0008;}
+.app:after{display:none!important;content:none!important}
+/* Portrait is a supported layout: compact header, full-width arena and a contained skill dock. */
+@media(orientation:portrait){
+ html,body{height:100%;height:100dvh;overflow:hidden}
+ .app{height:100%;height:100dvh;min-height:0;padding:4px;gap:4px}
+ .arena{width:100%;min-height:0;grid-template-rows:auto minmax(0,1fr) auto auto}
+ .fighters{grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding:4px}
+ .playercard{padding:4px;min-width:0}.cardhead{font-size:clamp(8px,2.4vw,11px)}
+ .actions{padding:5px;min-width:0;overflow:hidden}
+ .modebar{display:flex;flex-wrap:wrap;gap:4px}.modebar .detail{display:none}
+ .targetrow{display:flex;flex-wrap:wrap;gap:4px;white-space:normal;margin-bottom:5px}
+ .buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:minmax(36px,auto);gap:5px;max-height:36dvh;overflow-y:auto;padding:2px}
+ .buttons button{min-width:0;min-height:38px;padding:4px;font-size:11px}
+ .buttons .icon{font-size:15px}.buttons .btnname{font-size:10px;line-height:1.1}.buttons .detail{display:none}
+ .log{max-height:38px;overflow:hidden}
+ .top{display:flex;min-height:34px}.sub{display:none}.footer{display:none}
+ .town-panel{width:100%;height:100%;max-height:100dvh;border-radius:8px}.town-head{padding:8px}.town-foot{padding:7px}
+ .mode-cards{grid-template-columns:1fr;max-height:55dvh;overflow:auto}.mode-card{min-height:76px}
+ .layout-toggle{top:auto;bottom:8px;right:8px}
+}
+/* User-selected layout class adjusts the controls only; it never requests device rotation. */
+body.layout-portrait .app .buttons{grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-auto-rows:minmax(36px,auto)!important;max-height:36dvh;overflow-y:auto}
+body.layout-landscape .app .buttons{grid-template-columns:repeat(5,minmax(0,1fr))!important;grid-template-rows:repeat(2,minmax(32px,1fr))!important;max-height:none;overflow:visible}
+body.layout-landscape .app .buttons button{min-width:0}
+</style>
+<div id="fighterInfo" role="dialog" aria-live="polite"></div>
+<script>
+(()=>{
+ const btn=document.getElementById('layoutToggle');
+ const modes=['auto','portrait','landscape'];let idx=0;
+ function apply(){const mode=modes[idx];document.body.classList.remove('layout-portrait','layout-landscape');if(mode!=='auto')document.body.classList.add('layout-'+mode);btn.textContent='LAYOUT: '+mode.toUpperCase();btn.setAttribute('aria-label','Current layout '+mode+'. Tap to change layout.');}
+ btn.addEventListener('click',()=>{idx=(idx+1)%modes.length;apply();window.dispatchEvent(new Event('resize'));});
+ apply();
+})();
+</script>
+
+<style id="arena-overlay-controls-fix">
+/* Keep the battlefield full-bleed; HUD and skill buttons float above it. */
+html,body{width:100%;height:100%;min-height:100%;margin:0;overflow:hidden}
+body{overscroll-behavior:none}
+body .app{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;height:100dvh!important;min-height:0!important;max-width:none!important;margin:0!important;padding:0!important;gap:0!important;display:block!important;overflow:hidden!important}
+body .app>.top{position:absolute!important;z-index:20;top:6px;left:8px;right:8px;margin:0!important;pointer-events:none;display:flex;align-items:flex-start;justify-content:flex-end;gap:8px}
+body .app>.top>div:first-child{display:none}
+body .app .header-wallet{pointer-events:auto}
+body .app .arena{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;max-width:none!important;margin:0!important;border-radius:0!important;border:0!important;box-shadow:none!important;overflow:hidden!important;display:block!important;background:transparent!important}
+body .app .arena>.fighters{position:absolute!important;z-index:12;top:5px;left:6px;right:6px;display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:5px!important;padding:5px!important;background:transparent!important;border:0!important;pointer-events:none}
+body .app .arena .playercard{min-width:0!important;padding:5px!important;border:2px solid #d9b96c!important;border-radius:12px!important;background:linear-gradient(145deg,#203a2bdf,#14271fe8)!important;box-shadow:0 3px 8px #0007!important;backdrop-filter:blur(3px)}
+body .app .arena .playercard.enemy{background:linear-gradient(145deg,#562c2cdf,#29171be8)!important}
+body .app .arena #arenaHealthvas{position:absolute!important;z-index:1;inset:0!important;display:block!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;object-fit:fill!important}
+body .app .arena .log{position:absolute!important;z-index:18;left:8px;right:8px;bottom:clamp(126px,22vh,175px);max-height:38px!important;min-height:0!important;padding:5px 9px!important;overflow:hidden!important;border:1px solid #e3c77f!important;border-radius:9px!important;background:#2b2117b8!important;color:#fff2cb!important;backdrop-filter:blur(4px)}
+body .app .arena .actions{position:absolute!important;z-index:25;left:0!important;right:0!important;bottom:0!important;width:100%!important;max-width:none!important;min-width:0!important;padding:5px clamp(5px,1vw,14px) max(6px,env(safe-area-inset-bottom))!important;margin:0!important;border:0!important;border-radius:0!important;background:linear-gradient(180deg,#2a291400 0%,#171b1bc9 18%,#101717df 100%)!important;box-shadow:none!important;overflow:visible!important;backdrop-filter:none!important}
+body .app .arena .modebar{display:none!important}
+body .app .arena .targetrow{display:flex!important;align-items:center;flex-wrap:wrap;gap:4px!important;margin:0 0 4px!important;padding:0!important;background:transparent!important;color:#fff2c8!important;font-size:11px!important}
+body .app .arena .actiontitle{display:none!important}
+body .app .arena .action-hint{position:absolute!important;right:8px;top:-23px;max-width:70%;font-size:10px!important;line-height:1.2!important;color:#fff5d6!important;text-align:right;text-shadow:0 1px 3px #000;background:#1c241bb8;padding:3px 6px;border-radius:5px}
+body .app .arena .buttons{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;grid-template-rows:repeat(2,minmax(36px,auto))!important;gap:5px!important;width:100%!important;max-width:none!important;max-height:none!important;min-width:0!important;overflow:visible!important;padding:0!important;background:transparent!important}
+body .app .arena .buttons button{min-width:0!important;width:100%!important;min-height:clamp(35px,7.2vh,58px)!important;margin:0!important;padding:3px 2px!important;font-size:clamp(9px,1.2vw,12px)!important;white-space:normal!important;backdrop-filter:blur(3px)}
+body .app .arena .buttons .icon{font-size:clamp(13px,2vh,19px)!important;margin:0 0 1px!important}
+body .app .arena .buttons .btnname{font-size:clamp(9px,1.1vw,12px)!important;line-height:1.05!important}
+body .app .arena .buttons .detail{display:none!important}
+body .app>.footer{display:none!important}
+body .town-overlay,body .shop-overlay,body .setup-overlay,body .match-overlay,body .mode-select-overlay{z-index:100!important}
+@media(orientation:portrait){
+ body .app .arena>.fighters{grid-template-columns:repeat(3,minmax(0,1fr))!important;top:4px;left:4px;right:4px;gap:3px!important;padding:3px!important}
+ body .app .arena .playercard{padding:3px!important}
+ body .app .arena .cardhead{font-size:9px!important}
+ body .app .arena .stats{font-size:8px!important}
+ body .app .arena .log{bottom:clamp(158px,24vh,220px);font-size:10px!important}
+ body .app .arena .targetrow{font-size:10px!important}
+ body .app .arena .buttons{grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-template-rows:repeat(5,minmax(32px,auto))!important;gap:4px!important;max-height:43dvh!important;overflow-y:auto!important;overscroll-behavior:contain}
+ body .app .arena .buttons button{min-height:34px!important}
+ body .app .arena .actions{padding:4px 5px max(5px,env(safe-area-inset-bottom))!important}
+ body .app .arena .action-hint{top:-21px;max-width:58%;font-size:9px!important}
+}
+@media(max-height:430px) and (orientation:landscape){
+ body .app .arena>.fighters{grid-template-columns:repeat(6,minmax(0,1fr))!important;right:115px}
+ body .app .arena .playercard{padding:3px!important}
+ body .app .arena .cardhead{font-size:8px!important}
+ body .app .arena .hpbar,body .app .arena .energybar,body .app .arena .shieldbar{height:6px!important;margin-top:2px!important}
+ body .app .arena .stats{font-size:7px!important}
+ body .app .arena .log{bottom:112px;max-height:24px!important;font-size:9px!important}
+ body .app .arena .buttons{grid-template-rows:repeat(2,minmax(28px,auto))!important;gap:3px!important}
+ body .app .arena .buttons button{min-height:29px!important}
+}
+</style>
+
+
+<style id="combat-controls-and-clean-hud-fix">
+/* Combat HUD: keep every action button inside the viewport and remove non-combat chrome. */
+html, body { width:100%; height:100%; overflow:hidden; }
+body .app { width:100vw!important; height:100dvh!important; padding:0!important; margin:0!important; }
+body .app > .top { z-index:30; }
+body.battle-active .app > .top { display:none!important; }
+body.battle-active .app > .footer { display:none!important; }
+body .app .arena { position:absolute!important; inset:0!important; width:100vw!important; height:100dvh!important; }
+body .app .arena > #arenaHealthvas { position:absolute!important; inset:0!important; width:100%!important; height:100%!important; }
+/* Actions are a sibling of the arena canvas, not a child of the canvas itself. */
+body .app .arena .actions { position:absolute!important; z-index:25!important; left:0!important; right:0!important; bottom:0!important; width:100%!important; max-width:100%!important; box-sizing:border-box!important; padding:5px 6px max(6px, env(safe-area-inset-bottom))!important; background:linear-gradient(180deg, transparent, rgba(3,9,18,.78))!important; overflow:visible!important; }
+body .app .arena .actions .buttons { display:grid!important; grid-template-columns:repeat(5,minmax(0,1fr))!important; grid-template-rows:repeat(2,minmax(34px,auto))!important; grid-auto-flow:row!important; gap:5px!important; width:100%!important; max-width:100%!important; max-height:none!important; height:auto!important; min-width:0!important; overflow:visible!important; padding:0!important; margin:0!important; box-sizing:border-box!important; }
+body .app .arena .actions .buttons button { display:flex!important; flex-direction:column!important; justify-content:center!important; align-items:center!important; min-width:0!important; width:100%!important; max-width:100%!important; min-height:clamp(34px,7.5dvh,60px)!important; max-height:60px!important; padding:3px 2px!important; margin:0!important; box-sizing:border-box!important; overflow:hidden!important; font-size:clamp(8px,1.3vw,12px)!important; }
+body .app .arena .actions .buttons .icon { font-size:clamp(12px,2dvh,19px)!important; line-height:1!important; }
+body .app .arena .actions .buttons .btnname { display:block!important; max-width:100%!important; font-size:clamp(8px,1.15vw,12px)!important; line-height:1.05!important; overflow-wrap:anywhere!important; }
+body .app .arena .actions .buttons .detail { display:none!important; }
+body .app .arena .actions .modebar { display:none!important; }
+body .app .arena .actions .targetrow { display:flex!important; flex-wrap:wrap!important; gap:3px!important; max-width:100%!important; margin:0 0 4px!important; }
+body .app .arena .actions .targetrow button { min-height:26px!important; padding:4px 7px!important; font-size:10px!important; }
+body .app .arena .log { z-index:18!important; left:6px!important; right:6px!important; bottom:calc(clamp(82px,16dvh,130px) + env(safe-area-inset-bottom))!important; max-height:34px!important; min-height:0!important; padding:4px 7px!important; font-size:10px!important; overflow:hidden!important; }
+body.battle-active .app .header-wallet { display:none!important; }
+@media (orientation:portrait) {
+ body .app .arena .actions { padding:4px 5px max(5px,env(safe-area-inset-bottom))!important; }
+ body .app .arena .actions .buttons { grid-template-columns:repeat(2,minmax(0,1fr))!important; grid-template-rows:repeat(5,minmax(30px,auto))!important; gap:4px!important; }
+ body .app .arena .actions .buttons button { min-height:clamp(29px,4.4dvh,42px)!important; max-height:42px!important; flex-direction:row!important; gap:5px!important; }
+ body .app .arena .actions .buttons .icon { font-size:15px!important; flex:0 0 auto!important; }
+ body .app .arena .actions .buttons .btnname { font-size:10px!important; text-align:left!important; }
+ body .app .arena .log { bottom:calc(clamp(180px,37dvh,245px) + env(safe-area-inset-bottom))!important; }
+}
+@media (max-height:430px) and (orientation:landscape) {
+ body .app .arena .actions .buttons { grid-template-rows:repeat(2,minmax(27px,auto))!important; gap:3px!important; }
+ body .app .arena .actions .buttons button { min-height:29px!important; max-height:34px!important; }
+ body .app .arena .actions .targetrow { margin-bottom:2px!important; }
+ body .app .arena .log { bottom:calc(72px + env(safe-area-inset-bottom))!important; max-height:24px!important; }
+}
+</style>
+<script id="battle-hud-state-fix">
+(()=>{
+ const body=document.body;
+ const overlays=['townOverlay','shopOverlay','setupOverlay','matchOverlay','modeSelectOverlay'];
+ function shown(el){ if(!el)return false; const cs=getComputedStyle(el); return cs.display!=='none' && cs.visibility!=='hidden' && Number(cs.opacity||1)!==0; }
+ function updateBattleState(){
+   const modalOpen=overlays.some(id=>shown(document.getElementById(id)));
+   const app=document.querySelector('.app');
+   const appVisible=app && getComputedStyle(app).visibility!=='hidden';
+   body.classList.toggle('battle-active',!!(appVisible&&!modalOpen));
+ }
+ const observer=new MutationObserver(updateBattleState);
+ observer.observe(document.body,{subtree:true,attributes:true,attributeFilter:['style','class']});
+ window.addEventListener('resize',updateBattleState,{passive:true});
+ updateBattleState();
+})();
+</script>
+
+
+<style>
+#onlineRoomOverlay{position:fixed;inset:0;z-index:10020;display:none;align-items:center;justify-content:center;padding:16px;background:#020711eF}
+#onlineRoomOverlay .online-card{width:min(560px,100%);padding:24px;border:1px solid #36d8ed;background:linear-gradient(145deg,#10253a,#080f1c);box-shadow:0 0 40px #12cde522;color:#e8fbff}
+#onlineRoomOverlay h2{margin-top:0;color:#59e7f1;letter-spacing:2px}
+#onlineRoomOverlay p{line-height:1.5;color:#b5cad9}
+#onlineRoomOverlay button,#onlineRoomOverlay input{box-sizing:border-box;padding:12px;border:1px solid #3bc8d8;background:#0d2032;color:#eaffff;width:100%;margin:5px 0}
+#onlineRoomOverlay .online-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#onlineRoomStatus{padding:10px;background:#071522;border-left:3px solid #35e5f1;overflow-wrap:anywhere;font-size:13px}
+@media(max-width:560px){#onlineRoomOverlay .online-row{grid-template-columns:1fr}}
+</style>
+<div id="onlineRoomOverlay" role="dialog" aria-modal="true">
+ <section class="online-card">
+  <h2>ONLINE DUEL ROOM</h2>
+  <p>Create a private room on one device, then send the generated invite link to your other device. Both devices need internet access. This first step establishes a direct peer connection; combat-action synchronization is the next development step.</p>
+  <div class="online-row"><button id="onlineHostBtn">CREATE ROOM & INVITE</button><button id="onlineJoinBtn">JOIN FROM LINK</button></div>
+  <input id="onlineInviteLink" readonly placeholder="Your invite link will appear here">
+  <button id="onlineCopyBtn">COPY INVITE LINK</button>
+  <div id="onlineRoomStatus">Not connected. Create a room or open an invite link.</div>
+  <button id="onlineCloseBtn">BACK TO TOWN HALL</button>
+ </section>
+</div>
+<script>
+(()=>{
+ const $=id=>document.getElementById(id);let peer=null,conn=null,hostMode=false,attempt=0;
+ const overlay=$('onlineRoomOverlay'),status=$('onlineRoomStatus'),link=$('onlineInviteLink');
+ function show(){overlay.style.display='flex';}
+ function setStatus(t){status.textContent=t;}
+ function loadPeer(){return new Promise((resolve,reject)=>{if(window.Peer)return resolve();const sc=document.createElement('script');sc.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';sc.onload=()=>window.Peer?resolve():reject(new Error('Could not load PeerJS. Check internet access or try hosting the game over HTTPS.'));sc.onerror=()=>reject(new Error('Could not download the networking library. Check internet access and reload the game.'));document.head.appendChild(sc);});}
+ function makePeer(){return new Promise((resolve,reject)=>{try{
+   if(peer){try{peer.destroy();}catch(_){} peer=null;}
+   const onWeb = location.protocol === 'https:' || location.protocol === 'http:';
+   if(!onWeb) throw new Error('Online rooms need the hosted HTTPS game link. Deploy this game online, then open that link on both devices.');
+   const host = location.hostname;
+   const port = location.port ? Number(location.port) : (location.protocol === 'https:' ? 443 : 80);
+   setStatus('Connecting to this game’s room server…');
+   const candidate=new Peer(undefined,{host,port,secure:location.protocol==='https:',path:'/peerjs',debug:1});
+   let settled=false;
+   candidate.on('open',id=>{if(settled)return;settled=true;peer=candidate;resolve({candidate,id});});
+   candidate.on('error',e=>{if(!settled){settled=true;reject(e);}else if(e&&e.type==='disconnected')setStatus('Signaling service disconnected. Check your internet and retry.');else setStatus('Room service error ('+(e&&e.type||'unknown')+'). Press CREATE ROOM again in a moment.');});
+   candidate.on('disconnected',()=>{setStatus('Signaling service disconnected. Reconnecting…');try{candidate.reconnect();}catch(_){}});
+  }catch(e){reject(e);}});}
+ async function host(){show();link.value='';attempt=0;try{await loadPeer();while(attempt<2){attempt++;try{const result=await makePeer();hostMode=true;const u=new URL(location.href);u.searchParams.set('room',result.id);link.value=u.href;setStatus('Room created. Copy the invite link and open it on your other device. Waiting for the second player…');result.candidate.on('connection',c=>{conn=c;wire();});return;}catch(e){if(attempt<2){setStatus('Room service temporarily unavailable. Retrying…');await new Promise(r=>setTimeout(r,1200));}else{const type=e&&e.type||e&&e.message||'unknown';setStatus('Could not create a room ('+type+'). The game’s room server could not be reached. Confirm this game is deployed with the included server.js on a Node web host, then reload.');}}}}catch(e){setStatus(e.message);}}
+ async function join(id){show();if(!id){setStatus('No room ID found in this link. Ask the host to send the full invite link.');return;}try{await loadPeer();const result=await makePeer();hostMode=false;setStatus('Connecting to the host…');conn=result.candidate.connect(id,{reliable:true});wire();}catch(e){setStatus('Could not join ('+(e&&e.type||e&&e.message||'unknown')+'). The room server could not be reached. Open the deployed HTTPS game link and try again.');}}
+ function wire(){if(!conn)return;conn.on('open',()=>{setStatus('CONNECTED: both devices are linked. Combat turns and damage are not synchronized yet.');conn.send({type:'hello',name:/Mobi|Android/i.test(navigator.userAgent)?'Phone player':'Computer player'});});conn.on('data',d=>{if(d&&d.type==='hello')setStatus('CONNECTED with '+d.name+'. Peer-to-peer link is active; combat synchronization is not enabled yet.');});conn.on('close',()=>setStatus('The other player disconnected.'));conn.on('error',()=>setStatus('Connection failed. Reopen the invite link and try again.'));}
+ $('townMode3').addEventListener('click',()=>{if(typeof startFromLobby==='function')startFromLobby('3v3');else{document.getElementById('townOverlay').style.display='none';document.getElementById('setupOverlay').style.display='flex';}});
+ $('townOnline').addEventListener('click',()=>{show();const room=new URL(location.href).searchParams.get('room');if(room){link.value=location.href;join(room);}else setStatus('Choose CREATE ROOM on this device, then open the generated link on your other device.');});
+ $('onlineHostBtn').onclick=host;$('onlineJoinBtn').onclick=()=>{const id=new URL(location.href).searchParams.get('room');if(id)join(id);else setStatus('Open the invite link on this device first, or create a room on the other device.');};
+ $('onlineCopyBtn').onclick=async()=>{if(!link.value)return setStatus('Create a room first.');try{await navigator.clipboard.writeText(link.value);setStatus('Invite link copied. Send it to your other device.');}catch(e){link.select();link.focus();setStatus('Select and copy the invite link manually.');}};
+ $('onlineCloseBtn').onclick=()=>overlay.style.display='none';
+ const room=new URL(location.href).searchParams.get('room');if(room){setTimeout(()=>{show();link.value=location.href;setStatus('Invite detected. Joining room…');join(room);},900);}
+})();
+</script>
+
+</body>
+</html>
