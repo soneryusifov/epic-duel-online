@@ -560,9 +560,7 @@ body{display:block!important;background:radial-gradient(ellipse at 50% 0%,#142d4
     <div id="log" class="log"><strong>DUEL START</strong> — Choose an action. Swords require close range; pistols and bazookas fire from a distance. Equipment attacks cost no energy.</div>
     <div class="actions">
       <div class="modebar" aria-label="Game mode">
-        <button id="mode1" class="modebtn">1 VS 1</button>
-        <button id="mode2" class="modebtn active">2 VS 2 TEAM BATTLE</button><button id="modeJ" class="modebtn">JUGGERNAUT</button>
-        <span class="detail">Your ally fights automatically · Choose a target · Damage ±10%</span>
+        <button id="mode1" class="modebtn active">1 VS 1 DUEL</button>
       </div>
       <div class="targetrow" id="targetRow"><strong>TARGET:</strong><button class="targetbtn active" id="targetE">Rival 1</button><button class="targetbtn" id="targetE2">Rival 2</button><button class="targetbtn" id="targetE3" style="display:none">Rival 3</button><strong style="margin-left:8px">SUPPORT:</strong><button class="targetbtn active" id="supportP">Self</button><button class="targetbtn" id="supportP2">Ally</button><button class="targetbtn" id="supportP3" style="display:none">Ally 2</button><span id="teamStatus">2 teams · 4 fighters</span></div>
       <div class="actiontitle">CHOOSE ACTION</div><div id="actionHint" class="action-hint">Choose an action, then click your target.</div>
@@ -586,7 +584,7 @@ body{display:block!important;background:radial-gradient(ellipse at 50% 0%,#142d4
  <section class="town-panel">
   <header class="town-head"><div><div class="town-title">DUELIST <span>TOWN HALL</span></div><div class="town-sub">THE CROSSROADS · SOCIAL HUB</div></div><div class="town-header-right"><div class="wallet-pill">🪙 <span id="townGoldAmount">500</span> GOLD</div><div class="badge">SAFE ZONE</div></div></header>
   <canvas id="townCanvas" class="town-scene" width="1200" height="650" aria-label="Animated Town Hall lobby"></canvas>
-  <footer class="town-foot"><div class="town-foot-copy"><p id="lobbyNotice">Your hero is waiting in the Town Hall. Visit the merchant, improve your build, or choose a battle mode below.</p><div class="equipped-summary" id="equippedSummary">⚔ Basic Blade · 🔫 Basic Pistol · 🚀 Basic Launcher</div></div><div class="town-actions"><button id="townBuild" class="town-primary">⚙ CHARACTER BUILD</button><button id="townMerchant" class="merchant-button">🛒 MERCHANT</button><button id="townMode1" class="queue-button">⚔ 1 VS 1</button><button id="townMode2" class="queue-button">🛡 2 VS 2</button><button id="townModeJ" class="queue-button">👑 JUGGERNAUT</button><button id="townMode3" class="queue-button">⚔ 3 VS 3</button><button id="townOnline" class="queue-button">🌐 ONLINE ROOM</button></div></footer>
+  <footer class="town-foot"><div class="town-foot-copy"><p id="lobbyNotice">Your hero is waiting in the Town Hall. Visit the merchant, improve your build, or start a 1 VS 1 duel.</p><div class="equipped-summary" id="equippedSummary">⚔ Basic Blade · 🔫 Basic Pistol · 🚀 Basic Launcher</div></div><div class="town-actions"><button id="townBuild" class="town-primary">⚙ CHARACTER BUILD</button><button id="townMerchant" class="merchant-button">🛒 MERCHANT</button><button id="townMode1" class="queue-button">⚔ 1 VS 1</button><button id="townOnline" class="queue-button">🌐 ONLINE ROOM</button></div></footer>
  </section>
 </div>
 <div class="shop-overlay" id="shopOverlay" style="display:none" aria-modal="true" role="dialog">
@@ -604,9 +602,9 @@ body{display:block!important;background:radial-gradient(ellipse at 50% 0%,#142d4
   <p>Select a mode. Matchmaking takes a random 3–6 seconds before the battle setup opens. This offline prototype matches you with AI-controlled rivals.</p>
   <div class="mode-cards">
    <button class="mode-card" data-mode="1v1"><span class="mode-icon">⚔️</span><strong>1 VS 1 DUEL</strong><small>One fighter against one rival. Pure tactical combat.</small></button>
-   <button class="mode-card" data-mode="2v2"><span class="mode-icon">🛡️</span><strong>2 VS 2 TEAM BATTLE</strong><small>Fight alongside an AI ally against two rivals.</small></button>
-   <button class="mode-card" data-mode="juggernaut"><span class="mode-icon">👑</span><strong>JUGGERNAUT</strong><small>One champion against two rivals. Their combined skill budget is capped at 150% of yours.</small></button>
-   <button class="mode-card" data-mode="3v3"><span class="mode-icon">⚔️</span><strong>3 VS 3 SQUAD BATTLE</strong><small>Three fighters on each side. Your two AI teammates fight automatically.</small></button>
+   
+   
+   
   </div>
   <p><button id="fullscreenBtn" class="fullscreen-btn">⛶ ENTER FULLSCREEN</button></p>
  </section>
@@ -673,7 +671,8 @@ return{
 x,hp:100,maxHp:100,en:100,maxEn:100,shield:0,maxShield:0,player,pose:'idle',poseTime:0,flash:0,guard:0,lean:0,attackKind:'',hit:false,critChance:.05,blockChance:.05,defendChance:.05,defensePoints:0}
 }
 function reset(){
- matchEnded=false;document.querySelector('.app').style.visibility='visible';
+  mode='1v1';
+  matchEnded=false;document.querySelector('.app').style.visibility='visible';
  pendingKind=null;
  document.querySelectorAll('.buttons button').forEach(b=>b.classList.remove('skill-selected'));
  const hint=document.getElementById('actionHint');if(hint)hint.textContent='Choose an action, then click a target in the arena.';
@@ -1599,7 +1598,7 @@ function weaponFor(category,id=equipped[category]){
 function weaponName(category,id){return weaponFor(category,id).name}
 function weaponMultiplier(category){return weaponFor(category).multiplier}
 function weaponPrice(category,tier){const base={pistol:250,sword:350,bazooka:500}[category];if(category==='pistol'&&tier===1)return 250;return Math.round((base+Math.pow(tier-1,1.68)*125)/10)*10;}
-function startFromLobby(selectedMode){document.getElementById('townOverlay').style.display='none';if(usedSkillPoints()!==30){document.getElementById('setupOverlay').style.display='flex';renderSkillSetup();return}findMatch(selectedMode)}
+function startFromLobby(selectedMode='1v1'){selectedMode='1v1';document.getElementById('townOverlay').style.display='none';if(usedSkillPoints()!==30){document.getElementById('setupOverlay').style.display='flex';renderSkillSetup();return}findMatch('1v1')}
 function scheduleLobbyReturn(victory){
  if(matchEnded)return;matchEnded=true;
  const rewardRange=mode==='1v1'?[30,45]:['2v2','3v3'].includes(mode)?[50,60]:[55,65];
@@ -1686,8 +1685,8 @@ document.getElementById('fullscreenBtn').onclick=enterFullscreen;
 document.addEventListener('fullscreenchange',()=>{const b=document.getElementById('fullscreenBtn');if(b)b.textContent=document.fullscreenElement?'⛶ FULLSCREEN ACTIVE':'⛶ ENTER FULLSCREEN';});
 function showModeSelect(){document.getElementById('modeSelectOverlay').style.display='flex';}
 // Local prototype matchmaking: randomized 3–6 second queue, then AI opponents (no online server connection).
-function findMatch(selectedMode){
- if(turnBusy)return;mode=selectedMode;enterFullscreen();
+function findMatch(selectedMode='1v1'){
+  if(turnBusy)return;mode='1v1';enterFullscreen();
  const overlay=document.getElementById('matchOverlay');const status=document.getElementById('matchStatus');const details=document.getElementById('matchDetails');const count=document.getElementById('matchCount');
  document.getElementById('modeSelectOverlay').style.display='none';overlay.style.display='flex';status.textContent='SEARCHING FOR OPPONENTS';details.textContent='Finding a suitable match…';
  const wait=3000+Math.random()*3000;const started=performance.now();count.textContent='';
@@ -1816,8 +1815,8 @@ function townFrame(now){drawTownHall(now);requestAnimationFrame(townFrame)}
 document.getElementById('townBuild').onclick=()=>{document.getElementById('townOverlay').style.display='none';document.getElementById('setupOverlay').style.display='flex';renderSkillSetup()};
 // Removed a stale handler for a button that no longer exists; it previously threw a TypeError and prevented all lobby/shop handlers below from registering.
 document.getElementById('townMode1').onclick=()=>startFromLobby('1v1');
-document.getElementById('townMode2').onclick=()=>startFromLobby('2v2');
-document.getElementById('townModeJ').onclick=()=>startFromLobby('juggernaut');
+document.getElementById('townMode2').onclick=()=>startFromLobby('1v1');
+document.getElementById('townModeJ').onclick=()=>startFromLobby('1v1');
 document.getElementById('townMerchant').onclick=openShop;
 document.getElementById('closeShop').onclick=closeShop;
 document.getElementById('shopBackToLobby').onclick=closeShop;
@@ -2206,12 +2205,10 @@ body.battle-active .app .header-wallet { display:none!important; }
 <div id="onlineRoomOverlay" role="dialog" aria-modal="true">
  <section class="online-card">
   <h2>ONLINE DUEL ROOM</h2>
-  <p>Create a private room on one device, then send the generated invite link to your other device. Both devices need internet access. This first step establishes a direct peer connection; combat-action synchronization is the next development step.</p>
+  <p>Create a private room on one device, then send the generated invite link to your other device. Online combat synchronization is still being worked on; do not treat the current online battle as fully synchronized yet.</p>
   <div class="online-row"><button id="onlineHostBtn">CREATE ROOM & INVITE</button><button id="onlineJoinBtn">JOIN FROM LINK</button></div>
-  <label for="onlineModeSelect" style="display:block;margin-top:12px;color:#9eeaf2;font-weight:800">BATTLE MODE</label>
-  <select id="onlineModeSelect" style="box-sizing:border-box;width:100%;padding:12px;margin:5px 0;background:#0d2032;color:#eaffff;border:1px solid #3bc8d8">
-   <option value="1v1">1 VS 1</option><option value="2v2">2 VS 2</option><option value="3v3">3 VS 3</option><option value="juggernaut">JUGGERNAUT</option>
-  </select>
+  <div style="margin-top:12px;color:#9eeaf2;font-weight:800">BATTLE MODE: 1 VS 1 ONLY</div>
+  <select id="onlineModeSelect" aria-label="Battle mode" style="display:none"><option value="1v1" selected>1 VS 1</option></select>
   <label for="onlineSideSelect" style="display:block;margin-top:8px;color:#9eeaf2;font-weight:800">YOUR SIDE</label>
   <select id="onlineSideSelect" style="box-sizing:border-box;width:100%;padding:12px;margin:5px 0;background:#0d2032;color:#eaffff;border:1px solid #3bc8d8">
    <option value="blue">BLUE TEAM</option><option value="red">RED TEAM</option>
@@ -2247,11 +2244,11 @@ body.battle-active .app .header-wallet { display:none!important; }
  async function join(id){show();if(!id){setStatus('No room ID found in this link. Ask the host to send the full invite link.');return;}try{await loadPeer();const result=await makePeer();hostMode=false;setStatus('Connecting to the host…');conn=result.candidate.connect(id,{reliable:true});wire();}catch(e){setStatus('Could not join ('+(e&&e.type||e&&e.message||'unknown')+'). The room server could not be reached. Open the deployed HTTPS game link and try again.');}}
  function showStart(){ $('onlineStartBtn').style.display='block'; }
  let roomConfig={mode:'1v1',side:'blue'};
- function readConfig(){roomConfig={mode:$('onlineModeSelect').value,side:$('onlineSideSelect').value};return roomConfig;}
- function applyConfig(cfg,fromPeer=false){if(!cfg)return;roomConfig={mode:['1v1','2v2','3v3','juggernaut'].includes(cfg.mode)?cfg.mode:'1v1',side:cfg.side==='red'?'red':'blue'};if(fromPeer){$('onlineModeSelect').value=roomConfig.mode;$('onlineSideSelect').value=roomConfig.side;}}
+ function readConfig(){roomConfig={mode:'1v1',side:$('onlineSideSelect').value};$('onlineModeSelect').value='1v1';return roomConfig;}
+ function applyConfig(cfg,fromPeer=false){if(!cfg)return;roomConfig={mode:'1v1',side:cfg.side==='red'?'red':'blue'};$('onlineModeSelect').value='1v1';if(fromPeer)$('onlineSideSelect').value=roomConfig.side;}
  window.__onlineBattleActionSend=d=>{if(conn&&conn.open)conn.send(d)};
   function launchLocalBattle(cfg){
-    const selectedMode=(cfg&&['1v1','2v2','3v3','juggernaut'].includes(cfg.mode))?cfg.mode:'1v1';
+    const selectedMode='1v1';
     applyConfig({mode:selectedMode,side:cfg&&cfg.side==='red'?'red':'blue'},true);
     overlay.style.display='none';
     ['townOverlay','shopOverlay','setupOverlay','matchOverlay','modeSelectOverlay'].forEach(id=>{const el=$(id);if(el)el.style.display='none'});
@@ -2260,12 +2257,12 @@ body.battle-active .app .header-wallet { display:none!important; }
     window.__onlineBattle.start(hostMode?'host':'guest',d=>{if(conn&&conn.open)conn.send(d)},selectedMode);
     setStatus('ONLINE '+selectedMode.toUpperCase()+' · '+(hostMode?'Your turn first.':'Waiting for the host turn…'));
   }
- function startBattle(){if(!conn||!conn.open){setStatus('Opponent is not connected.');return;}const cfg=hostMode?readConfig():roomConfig;if(!['1v1','2v2','3v3','juggernaut'].includes(cfg.mode))cfg.mode='1v1';applyConfig(cfg,true);conn.send({type:'start_battle',config:cfg});launchLocalBattle(cfg);}
+ function startBattle(){if(!conn||!conn.open){setStatus('Opponent is not connected.');return;}const cfg={mode:'1v1',side:(hostMode?readConfig():roomConfig).side};applyConfig(cfg,true);conn.send({type:'start_battle',config:cfg});launchLocalBattle(cfg);}
  function wire(){if(!conn)return;conn.on('open',()=>{setStatus('CONNECTED: '+readConfig().mode.toUpperCase()+' ready. Host presses START BATTLE.');showStart();conn.send({type:'hello',name:/Mobi|Android/i.test(navigator.userAgent)?'Phone player':'Computer player'});if(hostMode)conn.send({type:'room_config',config:readConfig()})});conn.on('data',d=>{if(!d)return;if(d.type==='hello'){setStatus('CONNECTED with '+d.name+'. Online 1v1 ready.');showStart()}if(d.type==='room_config'&&!hostMode){applyConfig(d.config||{mode:'1v1',side:'blue'},true);setStatus('Online 1v1 ready. Waiting for host…')}if(d.type==='config_update'&&hostMode){setStatus('Guest cannot change the host battle mode. Host selection: '+readConfig().mode.toUpperCase()+'.');if(conn&&conn.open)conn.send({type:'room_config',config:readConfig()});}if(d.type==='start_battle')launchLocalBattle(d.config||{mode:'1v1',side:'blue'});if(d.type==='battle_state'&&window.__onlineBattle)window.__onlineBattle.apply(d);if(d.type==='battle_action'&&hostMode&&window.__onlineBattle)window.__onlineBattle.remoteAction(d)});conn.on('close',()=>setStatus('The other player disconnected.'));conn.on('error',()=>setStatus('Connection failed. Reopen the invite link and try again.'))}
- $('townMode3').addEventListener('click',()=>{if(typeof startFromLobby==='function')startFromLobby('3v3');else{document.getElementById('townOverlay').style.display='none';document.getElementById('setupOverlay').style.display='flex';}});
+ const townMode3=$('townMode3');if(townMode3)townMode3.addEventListener('click',()=>startFromLobby('1v1'));
  $('townOnline').addEventListener('click',()=>{show();const room=new URL(location.href).searchParams.get('room');if(room){link.value=location.href;join(room);}else setStatus('Choose CREATE ROOM on this device, then open the generated link on your other device.');});
  $('onlineStartBtn').onclick=startBattle;
- $('onlineModeSelect').onchange=()=>{const cfg=readConfig();if(conn&&conn.open&&hostMode){conn.send({type:'room_config',config:cfg});setStatus('Mode set to '+cfg.mode.toUpperCase()+'. Choose side and start when ready.');}else if(conn&&conn.open){conn.send({type:'config_update',config:cfg});setStatus('Selection sent to host.');}};
+ $('onlineModeSelect').onchange=()=>{$('onlineModeSelect').value='1v1';};
  $('onlineSideSelect').onchange=()=>{const cfg=readConfig();if(conn&&conn.open&&hostMode){conn.send({type:'room_config',config:cfg});setStatus('Side set to '+cfg.side.toUpperCase()+'. Start when ready.');}else if(conn&&conn.open){conn.send({type:'config_update',config:cfg});setStatus('Selection sent to host.');}};
  $('onlineHostBtn').onclick=async()=>{hostMode=true;await host();};
  $('onlineJoinBtn').onclick=()=>{const id=new URL(location.href).searchParams.get('room');if(id)join(id);else setStatus('Open the invite link on this device first, or create a room on the other device.');};
