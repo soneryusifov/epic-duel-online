@@ -2249,6 +2249,7 @@ body.battle-active .app .header-wallet { display:none!important; }
     ['townOverlay','shopOverlay','setupOverlay','matchOverlay','modeSelectOverlay'].forEach(id=>{const el=$(id);if(el)el.style.display='none'});
     const app=document.querySelector('.app');if(app)app.style.visibility='visible';
     mode=selectedMode;
+    window.__onlineBattleActionSend=d=>{if(conn&&conn.open){conn.send(d);return true}return false};
     window.__onlineBattle.start(hostMode?'host':'guest',d=>{if(conn&&conn.open)conn.send(d)},selectedMode);
     setStatus('ONLINE 1 VS 1 · '+(hostMode?'YOU ARE BLUE':'YOU ARE RED'));
   }
