@@ -263,7 +263,7 @@ canvas{width:100%;height:100%;min-height:0;aspect-ratio:auto;object-fit:contain}
 .mode-select-panel,.match-panel{width:min(900px,100%);border:1px solid #647c9b;border-radius:16px;background:linear-gradient(145deg,#17283b,#090f1a);padding:clamp(18px,3vw,32px);box-shadow:0 25px 90px #000d}
 .mode-select-panel h1{font-size:clamp(24px,4vw,42px);margin:0;color:#f5c56b;letter-spacing:3px}
 .mode-select-panel p,.match-panel p{color:#aebed1;line-height:1.5}
-.mode-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:20px}
+.mode-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:20px}
 .mode-card{min-height:150px;text-align:left;padding:18px;border-radius:10px;background:linear-gradient(150deg,#253b53,#101a29);border:1px solid #506985;display:flex;flex-direction:column;justify-content:space-between}
 .mode-card .mode-icon{font-size:30px}.mode-card strong{font-size:18px;color:#ffe1a0}.mode-card small{font-size:12px;color:#b8c7d9;line-height:1.45}
 .mode-card:hover{border-color:#f5c56b;box-shadow:0 0 25px #f5c56b22}
@@ -273,9 +273,9 @@ canvas{width:100%;height:100%;min-height:0;aspect-ratio:auto;object-fit:contain}
 .match-status{font-size:clamp(19px,3vw,28px);font-weight:900;color:#f5d48a;letter-spacing:1px}
 .match-count{display:none;font-size:42px;font-weight:900;color:#fff;margin:8px}
 .fullscreen-btn{min-height:0;padding:6px 10px;font-size:10px}
-@media(orientation:portrait){.app:after{content:'ROTATE YOUR DEVICE TO LANDSCAPE';position:fixed;inset:0;z-index:45;background:#080e18f5;display:flex;align-items:center;justify-content:center;text-align:center;color:#f5d48a;font-weight:900;letter-spacing:2px;font-size:18px;padding:30px;pointer-events:none}.mode-select-overlay,.match-overlay{z-index:55}}
+@media(orientation:portrait){.mode-select-overlay,.match-overlay{z-index:100}.town-panel{height:min(96dvh,900px)}.town-scene{min-height:170px}.town-foot{max-height:48dvh;overflow:auto}}
 @media(max-height:520px) and (orientation:landscape){.top{display:none}.fighters{padding:4px 8px}.cardhead{margin-bottom:3px}.hpbar{height:9px}.actions{padding:4px 8px}.buttons button{min-height:40px}.footer{display:none}.log{min-height:27px;padding:4px 8px}}
-@media(max-width:700px){.mode-cards{gap:7px}.mode-card{padding:10px;min-height:125px}.mode-card strong{font-size:14px}.mode-card small{font-size:10px}.mode-icon{font-size:24px}}
+@media(max-width:700px){.mode-cards{gap:7px;grid-template-columns:repeat(2,minmax(0,1fr))}.mode-card{padding:10px;min-height:125px}.mode-card strong{font-size:14px}.mode-card small{font-size:10px}.mode-icon{font-size:24px}}
 
 
 /* Combat readability and compact landscape controls */
@@ -471,6 +471,17 @@ body { display:block; }
  .buttons { width:100%; grid-template-columns:repeat(5,minmax(0,1fr)); grid-template-rows:repeat(2,minmax(0,1fr)); }
 }
 
+.buttons button.turn-hidden{opacity:.1!important;pointer-events:none!important;filter:grayscale(.7)}
+.app.portrait-layout{height:100dvh;min-height:100dvh;overflow-y:auto;overflow-x:hidden;padding:6px;gap:5px}
+.app.portrait-layout .top{flex-wrap:wrap}
+.app.portrait-layout .arena{flex:0 0 auto;min-height:0;grid-template-rows:auto clamp(260px,42dvh,440px) auto auto;overflow:visible}
+.app.portrait-layout canvas#arenaHealthvas{height:clamp(260px,42dvh,440px);min-height:260px}
+.app.portrait-layout .fighters{grid-template-columns:repeat(2,minmax(0,1fr))}
+.app.portrait-layout .buttons{grid-template-columns:repeat(2,minmax(0,1fr))}
+.app.portrait-layout .buttons button{min-height:60px}
+.app.portrait-layout .footer{display:flex;flex-wrap:wrap;padding-bottom:12px}
+.app.portrait-layout .targetrow{font-size:10px}
+.app.portrait-layout .targetbtn{min-height:32px}
 </style>
 
 <style id="advanced-skill-ui">
@@ -578,13 +589,13 @@ body{display:block!important;background:radial-gradient(ellipse at 50% 0%,#142d4
       </div>
     </div>
   </div>
-  <div class="footer"><span>Turn-based combat · Landscape arena</span><button id="restart" class="reset">↻ NEW MATCH</button></div>
+  <div class="footer"><span>Turn-based combat · Responsive arena</span><button data-layout-toggle class="reset">↕ LAYOUT: AUTO</button><button id="restart" class="reset">↻ NEW MATCH</button></div>
 </div>
 <div class="town-overlay" id="townOverlay" style="display:flex">
  <section class="town-panel">
   <header class="town-head"><div><div class="town-title">DUELIST <span>TOWN HALL</span></div><div class="town-sub">THE CROSSROADS · SOCIAL HUB</div></div><div class="town-header-right"><div class="wallet-pill">🪙 <span id="townGoldAmount">500</span> GOLD</div><div class="badge">SAFE ZONE</div></div></header>
   <canvas id="townCanvas" class="town-scene" width="1200" height="650" aria-label="Animated Town Hall lobby"></canvas>
-  <footer class="town-foot"><div class="town-foot-copy"><p id="lobbyNotice">Your hero is waiting in the Town Hall. Visit the merchant, improve your build, or start a 1 VS 1 duel.</p><div class="equipped-summary" id="equippedSummary">⚔ Basic Blade · 🔫 Basic Pistol · 🚀 Basic Launcher</div></div><div class="town-actions"><button id="townBuild" class="town-primary">⚙ CHARACTER BUILD</button><button id="townMerchant" class="merchant-button">🛒 MERCHANT</button><button id="townMode1" class="queue-button">⚔ 1 VS 1</button><button id="townOnline" class="queue-button">🌐 ONLINE ROOM</button></div></footer>
+  <footer class="town-foot"><div class="town-foot-copy"><p id="lobbyNotice">Your hero is waiting in the Town Hall. Visit the merchant, tune your build, or choose a battle mode.</p><div class="equipped-summary" id="equippedSummary">⚔ Basic Blade · 🔫 Basic Pistol · 🚀 Basic Launcher</div></div><div class="town-actions"><button id="townBuild" class="town-primary">⚙ CHARACTER BUILD</button><button id="townMerchant" class="merchant-button">🛒 MERCHANT</button><button id="townMode1" class="queue-button">⚔ BATTLE MODES</button><button data-layout-toggle class="queue-button">↕ LAYOUT: AUTO</button><button id="townOnline" class="queue-button">🌐 ONLINE ROOM</button></div></footer>
  </section>
 </div>
 <div class="shop-overlay" id="shopOverlay" style="display:none" aria-modal="true" role="dialog">
@@ -599,12 +610,12 @@ body{display:block!important;background:radial-gradient(ellipse at 50% 0%,#142d4
  <section class="mode-select-panel">
   <div class="sub">ONLINE-STYLE MATCHMAKING · TURN-BASED COMBAT</div>
   <h1>CHOOSE YOUR BATTLE</h1>
-  <p>Select a mode. Matchmaking takes a random 3–6 seconds before the battle setup opens. This offline prototype matches you with AI-controlled rivals.</p>
+  <p>Select a mode. Matchmaking takes a random 3–6 seconds, then you enter an AI-controlled battle. Online rooms are separate 1 VS 1 matches.</p>
   <div class="mode-cards">
    <button class="mode-card" data-mode="1v1"><span class="mode-icon">⚔️</span><strong>1 VS 1 DUEL</strong><small>One fighter against one rival. Pure tactical combat.</small></button>
-   
-   
-   
+   <button class="mode-card" data-mode="2v2"><span class="mode-icon">🛡️</span><strong>2 VS 2 TEAM BATTLE</strong><small>Fight alongside an ally against two rivals. Support and target selection matter.</small></button>
+   <button class="mode-card" data-mode="3v3"><span class="mode-icon">⚡</span><strong>3 VS 3 WARZONE</strong><small>Three allies against three opponents, with team turns and multiple targets.</small></button>
+   <button class="mode-card" data-mode="juggernaut"><span class="mode-icon">☠️</span><strong>JUGGERNAUT</strong><small>Your 30-point champion takes on two challengers with a combined 45-point budget.</small></button>
   </div>
   <p><button id="fullscreenBtn" class="fullscreen-btn">⛶ ENTER FULLSCREEN</button></p>
  </section>
@@ -649,6 +660,7 @@ let equipped=JSON.parse(localStorage.getItem('epicDuelEquipped')||'{"sword":"bas
 let shopCategory='sword';
 const manaSkills={power15:{cost:15,multiplier:1.5,label:'ARC BOLT',description:'50% more damage'},power20:{cost:20,multiplier:1.75,label:'PLASMA BURST',description:'75% more damage'},power30:{cost:30,multiplier:1.1,label:'NOVA STRIKE',description:'110% base damage to each rival'}};
 let skillSetupDone=false;
+let matchReward=null;
 function usedSkillPoints(){return skillNames.reduce((n,k)=>n+skillPoints[k],0)}
 function skillBonusDamage(){return skillPoints.damage*2}
 function rollDamage(avg,attacker,kind){const bonus=attacker===p?skillBonusDamage():0;const mean=avg+bonus;return Math.max(1,Math.round(mean*(0.9+Math.random()*0.2)))}
@@ -670,9 +682,9 @@ function fighter(x,player){
 return{
 x,hp:100,maxHp:100,en:100,maxEn:100,shield:0,maxShield:0,player,pose:'idle',poseTime:0,flash:0,guard:0,lean:0,attackKind:'',hit:false,critChance:.05,blockChance:.05,defendChance:.05,defensePoints:0}
 }
-function reset(){
-  mode='1v1';
-  matchEnded=false;document.querySelector('.app').style.visibility='visible';
+function reset(selectedMode=mode){
+  mode=['1v1','2v2','3v3','juggernaut'].includes(selectedMode)?selectedMode:(['1v1','2v2','3v3','juggernaut'].includes(mode)?mode:'1v1');
+  matchEnded=false;matchReward=null;document.querySelector('.app').style.visibility='visible';
  pendingKind=null;
  document.querySelectorAll('.buttons button').forEach(b=>b.classList.remove('skill-selected'));
  const hint=document.getElementById('actionHint');if(hint)hint.textContent='Choose an action, then click a target in the arena.';
@@ -687,12 +699,19 @@ function reset(){
  if(mode==='juggernaut'){e.maxHp=125;e.hp=125;e2.maxHp=125;e2.hp=125;e.maxEn=100;e.en=100;e2.maxEn=100;e2.en=100;e.juggernautSkillShare=22;e2.juggernautSkillShare=23;}
  p.x=['2v2','juggernaut','3v3'].includes(mode)?175:250;if(p2)p2.x=245;if(p3)p3.x=315;e.x=['2v2','juggernaut','3v3'].includes(mode)?725:650;if(e2)e2.x=655;if(e3)e3.x=585;
  turnBusy=false;over=false;fx=[];combatMoves=[];playerTurn=0;enemyTurnCount=0;playerGunReady=0;playerBazookaReady=0;enemyGunReady=0;enemyBazookaReady=0;targetKey='e';supportKey='p';
-  mode='1v1';
-  document.getElementById('modeBadge').textContent='1 VS 1 · DUEL';
-  const mode1=document.getElementById('mode1');if(mode1)mode1.classList.add('active');
-  const targetRow=document.getElementById('targetRow');if(targetRow)targetRow.style.display='none';
-  ['p2Card','p3Card','e2Card','e3Card','targetE2','targetE3','supportP2','supportP3'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none'});
-  ui.log.innerHTML='<strong>1 VS 1 · DUEL</strong> — Choose an action. Equipment attacks do not consume energy.';
+  const modeLabels={'1v1':'1 VS 1 · DUEL','2v2':'2 VS 2 · TEAM BATTLE','3v3':'3 VS 3 · TEAM BATTLE','juggernaut':'JUGGERNAUT · 1 VS 2'};
+  document.getElementById('modeBadge').textContent=modeLabels[mode];
+  const mode1=document.getElementById('mode1');if(mode1){mode1.classList.add('active');mode1.textContent=modeLabels[mode];}
+  const targetRow=document.getElementById('targetRow');if(targetRow)targetRow.style.display=mode==='1v1'?'none':'flex';
+  const modeVisibility={
+    p2Card:['2v2','3v3'].includes(mode),p3Card:mode==='3v3',
+    e2Card:['2v2','3v3','juggernaut'].includes(mode),e3Card:mode==='3v3',
+    targetE2:['2v2','3v3','juggernaut'].includes(mode),targetE3:mode==='3v3',
+    supportP2:['2v2','3v3'].includes(mode),supportP3:mode==='3v3'
+  };
+  Object.entries(modeVisibility).forEach(([id,visible])=>{const el=document.getElementById(id);if(el)el.style.display=visible?'block':'none';});
+  document.getElementById('teamStatus').textContent=mode==='juggernaut'?'1 Juggernaut · 2 Challengers':mode==='3v3'?'3 vs 3 · Team Battle':mode==='2v2'?'2 vs 2 · Team Battle':'1 vs 1 · Duel';
+  ui.log.innerHTML='<strong>'+modeLabels[mode]+'</strong> — Choose an action. Equipment attacks do not consume mana.';
 refresh();draw();
 }
 function refresh(){
@@ -709,6 +728,7 @@ ui[key+'ENtext'].textContent=`${f.en} / ${f.maxEn} MP`;
  for(const [id,skill] of Object.entries(manaSkills)){const b=document.getElementById(id);b.disabled=turnBusy||over||!p||p.en<skill.cost;b.querySelector('.detail').textContent=`${skill.cost} MP · ~${Math.round((id==='power30'?10:10*skill.multiplier)*weaponMultiplier('sword'))} dmg${id==='power30'?' / target':''}`;}
  document.getElementById('special').disabled=turnBusy||over||playerTurn<playerGunReady;
  document.getElementById('bazooka').disabled=turnBusy||over||playerTurn<playerBazookaReady;
+ document.getElementById('heavy').disabled=turnBusy||over||!p||p.en<16;
  document.querySelector('.arena')?.classList.toggle('opponent-turn',turnBusy); const support=supportTarget();
  const healAvailable=(p&&p.hp<p.maxHp)||(['2v2','3v3'].includes(mode)&&[p2,p3].some(a=>a&&a.hp>0&&a.hp<a.maxHp));
  const shieldCap=Math.max(10,skillPoints.shield*5+20);
@@ -747,7 +767,7 @@ function hit(att,def,kind,allowMulti=false,damageMultiplier=null){
  if(att===p){const category=(kind==='special'?'pistol':kind==='bazooka'?'bazooka':(['attack','heavy'].includes(kind)?'sword':null));if(category)raw=Math.round(raw*weaponMultiplier(category));}
  if(manaSkills[kind]){const multiplier=damageMultiplier===null?manaSkills[kind].multiplier:damageMultiplier;raw=Math.round(raw*multiplier);}
  const enraged=att.hp>0&&att.hp<att.maxHp*.25;
- if(enraged)raw=Math.round(raw*(2.2+Math.random()*.3)); // +120% to +150% damage
+ if(enraged)raw=Math.round(raw*(1.2+Math.random()*.3)); // rage multiplier: 120%–150% of normal damage
  const critical=Math.random()<(att.critChance??.05);
  if(critical)raw=Math.round(raw*(2+Math.random()*.65)); // +100% to +165%; stacks multiplicatively with rage
  const rageCritText=critical&&enraged?' CRIT · RAGE':critical?' CRITICAL':enraged?' RAGE':'';
@@ -761,7 +781,7 @@ function hit(att,def,kind,allowMulti=false,damageMultiplier=null){
  const blocked=!isRangedEquipment&&Math.random()<baseBlockChance;
  const defended=!blocked&&Math.random()<(def.defendChance??.05);
  const missMultiplier=missed?(0.25+Math.random()*0.25):1;
- const defenseFactor=Math.max(0,1-(def.defensePoints||0)*.02);
+ const defenseFactor=Math.max(.4,1-Math.min(.6,(def.defensePoints||0)*.02));
  let incoming=blocked?0:Math.max(0,Math.round(raw*missMultiplier*defenseFactor*((def.guard>0||defended)?.25:1)));
  const shieldBefore=def.shield||0;
  const absorbed=Math.min(shieldBefore,incoming);
@@ -774,7 +794,7 @@ function hit(att,def,kind,allowMulti=false,damageMultiplier=null){
  if(enraged&&!att.rageAnnounced){att.rageAnnounced=true;message('RAGE AWAKENED',`${att.name} is below 25% health. Damage increased by 120%–150%.`)}
  if(att===p&&skillPoints.lifesteal>0&&dealt>0){
    const steal=Math.floor(dealt*skillPoints.lifesteal*.03);
-   if(steal>0){const oldHp=p.hp;p.hp=Math.min(p.maxHp,p.hp+steal);const gained=p.hp-oldHp;if(gained>0)floatingText(p,`+${gained}`,'heal');message('LIFESTEAL',`${gained} health recovered (${skillPoints.lifesteal*2}% of damage dealt).`)}
+   if(steal>0){const oldHp=p.hp;p.hp=Math.min(p.maxHp,p.hp+steal);const gained=p.hp-oldHp;if(gained>0)floatingText(p,`+${gained}`,'heal');message('LIFESTEAL',`${gained} health recovered (${skillPoints.lifesteal*3}% of damage dealt).`)}
  }
  def.flash=.24;
  def.lean=def.player?-1:1;
@@ -790,7 +810,7 @@ function hit(att,def,kind,allowMulti=false,damageMultiplier=null){
    const splashMiss=Math.random()<((splash.blockChance??.05)/3);
    const splashDefended=Math.random()<(splash.defendChance??.05);
    const splashMissMultiplier=splashMiss?(0.25+Math.random()*0.25):1;
-   const splashDefenseFactor=Math.max(0,1-(splash.defensePoints||0)*.02);
+   const splashDefenseFactor=Math.max(.4,1-Math.min(.6,(splash.defensePoints||0)*.02));
    let splashIncoming=Math.max(0,Math.round(splashRaw*splashMissMultiplier*splashDefenseFactor*((splash.guard>0||splashDefended)?.25:1)));
    const shieldAbsorb=Math.min(splash.shield||0,splashIncoming);
    splash.shield=Math.max(0,(splash.shield||0)-shieldAbsorb);
@@ -835,8 +855,8 @@ return}
 message('BAZOOKA NOT READY',`Wait ${playerBazookaReady-playerTurn} more turn(s) before using the bazooka again.`);
 return}
  playerTurn++;
- if(kind==='special')playerGunReady=playerTurn+2;
- if(kind==='bazooka')playerBazookaReady=playerTurn+3;
+ if(kind==='special')playerGunReady=playerTurn+1;
+ if(kind==='bazooka')playerBazookaReady=playerTurn+2;
  const target=targetOverride==='e3'?e3:targetOverride==='e2'?e2:targetOverride==='e'?e:selectedTarget();
  if(!target||target.hp<=0){
 message('NO TARGET','No opponents remain.');
@@ -1595,11 +1615,12 @@ function weaponFor(category,id=equipped[category]){
 function weaponName(category,id){return weaponFor(category,id).name}
 function weaponMultiplier(category){return weaponFor(category).multiplier}
 function weaponPrice(category,tier){const base={pistol:250,sword:350,bazooka:500}[category];if(category==='pistol'&&tier===1)return 250;return Math.round((base+Math.pow(tier-1,1.68)*125)/10)*10;}
-function startFromLobby(selectedMode='1v1'){selectedMode='1v1';document.getElementById('townOverlay').style.display='none';if(usedSkillPoints()!==30){document.getElementById('setupOverlay').style.display='flex';renderSkillSetup();return}findMatch('1v1')}
-function scheduleLobbyReturn(victory){
+function startFromLobby(selectedMode=null){if(usedSkillPoints()!==30){document.getElementById('townOverlay').style.display='none';document.getElementById('setupOverlay').style.display='flex';renderSkillSetup();return}if(['1v1','2v2','3v3','juggernaut'].includes(selectedMode)){document.getElementById('townOverlay').style.display='none';findMatch(selectedMode);return}showModeSelect()}
+function scheduleLobbyReturn(victory,sharedReward=null){
  if(matchEnded)return;matchEnded=true;
- const rewardRange=mode==='1v1'?[30,45]:['2v2','3v3'].includes(mode)?[50,60]:[55,65];
- const reward=Math.floor(Math.random()*(rewardRange[1]-rewardRange[0]+1))+rewardRange[0];gold+=reward;saveEconomy();updateWallet();
+ const rewardRange=mode==='1v1'?[30,45]:mode==='2v2'?[50,60]:mode==='3v3'?[65,80]:[55,65];
+ const reward=Number.isFinite(sharedReward)&&sharedReward>=0&&sharedReward<=100?Math.floor(sharedReward):Math.floor(Math.random()*(rewardRange[1]-rewardRange[0]+1))+rewardRange[0];
+ matchReward=reward;gold+=reward;saveEconomy();updateWallet();
  const notice=document.getElementById('lobbyNotice');if(notice)notice.textContent=`${victory?'Victory':'Defeat'} · Match reward: +${reward} gold. Choose your next mode or visit the merchant.`;
  setTimeout(()=>{
    document.getElementById('townOverlay').style.display='flex';
@@ -1673,7 +1694,10 @@ document.getElementById('shield').onclick=()=>selectAction('shield');
 document.getElementById('power15').onclick=()=>selectAction('power15');
 document.getElementById('power20').onclick=()=>selectAction('power20');
 document.getElementById('power30').onclick=()=>selectAction('power30');
-document.getElementById('restart').onclick=reset;
+document.getElementById('restart').onclick=()=>reset(mode);
+function setLayoutMode(next){const app=document.querySelector('.app');if(!app)return;const portrait=next==='portrait';app.classList.toggle('portrait-layout',portrait);try{localStorage.setItem('epicDuelLayout',portrait?'portrait':'auto')}catch(_){}document.querySelectorAll('[data-layout-toggle]').forEach(btn=>{btn.textContent=portrait?'↕ LAYOUT: PORTRAIT':'↕ LAYOUT: AUTO';btn.setAttribute('aria-pressed',String(portrait));});}
+document.querySelectorAll('[data-layout-toggle]').forEach(btn=>btn.addEventListener('click',()=>setLayoutMode(document.querySelector('.app')?.classList.contains('portrait-layout')?'auto':'portrait')));
+let savedLayout='auto';try{savedLayout=localStorage.getItem('epicDuelLayout')||'auto'}catch(_){}setLayoutMode(savedLayout==='portrait'?'portrait':'auto');
 const modeButton=document.getElementById('mode1');if(modeButton)modeButton.onclick=()=>showModeSelect();
 function enterFullscreen(){const root=document.documentElement;if(!document.fullscreenElement&&root.requestFullscreen){root.requestFullscreen().catch(()=>{});}}
 document.getElementById('fullscreenBtn').onclick=enterFullscreen;
@@ -1681,11 +1705,17 @@ document.addEventListener('fullscreenchange',()=>{const b=document.getElementByI
 function showModeSelect(){document.getElementById('modeSelectOverlay').style.display='flex';}
 // Local prototype matchmaking: randomized 3–6 second queue, then AI opponents (no online server connection).
 function findMatch(selectedMode='1v1'){
-  if(turnBusy)return;mode='1v1';enterFullscreen();
- const overlay=document.getElementById('matchOverlay');const status=document.getElementById('matchStatus');const details=document.getElementById('matchDetails');const count=document.getElementById('matchCount');
- document.getElementById('modeSelectOverlay').style.display='none';overlay.style.display='flex';status.textContent='SEARCHING FOR OPPONENTS';details.textContent='Finding a suitable match…';
- const wait=3000+Math.random()*3000;const started=performance.now();count.textContent='';
- const tick=()=>{const left=Math.max(0,wait-(performance.now()-started));if(left>0){requestAnimationFrame(tick);return;}status.textContent='MATCH FOUND';details.textContent='Opponents found. Preparing the arena…';setTimeout(()=>{overlay.style.display='none';document.getElementById('townOverlay').style.display='none';document.getElementById('shopOverlay').style.display='none';document.querySelector('.app').style.visibility='visible';reset();},650);};tick();
+  if(turnBusy)return;
+  selectedMode=['1v1','2v2','3v3','juggernaut'].includes(selectedMode)?selectedMode:'1v1';
+  mode=selectedMode;enterFullscreen();
+  const overlay=document.getElementById('matchOverlay'),status=document.getElementById('matchStatus'),details=document.getElementById('matchDetails'),count=document.getElementById('matchCount');
+  document.getElementById('modeSelectOverlay').style.display='none';overlay.style.display='flex';
+  status.textContent='SEARCHING FOR OPPONENTS';details.textContent='Finding a suitable match…';count.textContent='';
+  const wait=3000+Math.random()*3000,started=performance.now();
+  const tick=()=>{const left=Math.max(0,wait-(performance.now()-started));if(left>0){requestAnimationFrame(tick);return;}
+    status.textContent='MATCH FOUND';details.textContent='Opponents found. Preparing the arena…';
+    setTimeout(()=>{overlay.style.display='none';document.getElementById('townOverlay').style.display='none';document.getElementById('shopOverlay').style.display='none';document.querySelector('.app').style.visibility='visible';reset(selectedMode);},650);
+  };tick();
 }
 document.querySelectorAll('[data-mode]').forEach(btn=>btn.addEventListener('click',()=>findMatch(btn.dataset.mode)));
 document.getElementById('targetE').onclick=()=>{
@@ -1809,7 +1839,7 @@ function drawTownHall(now){
 function townFrame(now){drawTownHall(now);requestAnimationFrame(townFrame)}
 document.getElementById('townBuild').onclick=()=>{document.getElementById('townOverlay').style.display='none';document.getElementById('setupOverlay').style.display='flex';renderSkillSetup()};
 // Removed a stale handler for a button that no longer exists; it previously threw a TypeError and prevented all lobby/shop handlers below from registering.
-document.getElementById('townMode1').onclick=()=>startFromLobby('1v1');
+document.getElementById('townMode1').onclick=()=>startFromLobby();
 const unusedTownMode2=document.getElementById('townMode2');if(unusedTownMode2)unusedTownMode2.onclick=()=>startFromLobby('1v1');
 const unusedTownModeJ=document.getElementById('townModeJ');if(unusedTownModeJ)unusedTownModeJ.onclick=()=>startFromLobby('1v1');
 document.getElementById('townMerchant').onclick=openShop;
@@ -1987,17 +2017,56 @@ TARGETING AND ANIMATION UPDATE NOTES
 /* Host-authoritative online duel bridge. */
 let onlineBattleRole=null,onlineBattleSend=null,onlineBattleTurn='host',onlineBattleSeq=0,onlineBattleLastSeq=-1;
 function onlineFighterState(f){return f?{x:f.x,hp:f.hp,maxHp:f.maxHp,en:f.en,maxEn:f.maxEn,shield:f.shield,maxShield:f.maxShield,guard:f.guard,pose:f.pose,poseTime:f.poseTime,flash:f.flash,lean:f.lean,attackKind:f.attackKind,hit:f.hit,name:f.name}:null}
-function onlineSnapshot(){return {type:'battle_state',seq:++onlineBattleSeq,mode,turn:onlineBattleTurn,over,playerTurn,enemyTurnCount,playerGunReady,playerBazookaReady,enemyGunReady,enemyBazookaReady,fighters:{p:onlineFighterState(p),p2:onlineFighterState(p2),p3:onlineFighterState(p3),e:onlineFighterState(e),e2:onlineFighterState(e2),e3:onlineFighterState(e3)},log:ui.log.innerHTML}}
+function onlineSnapshot(){return {type:'battle_state',seq:++onlineBattleSeq,mode,turn:onlineBattleTurn,over,winner:over?(allDown(teamEnemy())?'host':allDown(teamPlayer())?'guest':null):null,reward:matchReward,playerTurn,enemyTurnCount,playerGunReady,playerBazookaReady,enemyGunReady,enemyBazookaReady,fighters:{p:onlineFighterState(p),p2:onlineFighterState(p2),p3:onlineFighterState(p3),e:onlineFighterState(e),e2:onlineFighterState(e2),e3:onlineFighterState(e3)},log:ui.log.innerHTML}}
 function onlinePublish(){if(onlineBattleRole==='host'&&onlineBattleSend)onlineBattleSend(onlineSnapshot())}
-function onlineApplySnapshot(s){if(!s||s.type!=='battle_state'||s.seq<=onlineBattleLastSeq)return;onlineBattleLastSeq=s.seq;mode='1v1';onlineBattleTurn=s.turn||'host';over=!!s.over;turnBusy=onlineBattleTurn!=='guest';playerTurn=s.playerTurn||0;enemyTurnCount=s.enemyTurnCount||0;playerGunReady=s.playerGunReady||0;playerBazookaReady=s.playerBazookaReady||0;enemyGunReady=s.enemyGunReady||0;enemyBazookaReady=s.enemyBazookaReady||0;const put=(f,d)=>{if(f&&d)for(const k of ['hp','maxHp','en','maxEn','shield','maxShield','guard','pose','poseTime','flash','lean','attackKind','hit','name','x'])if(d[k]!==undefined)f[k]=d[k]};const fs=s.fighters||{};put(p,fs.e);put(p2,fs.e2);put(p3,fs.e3);put(e,fs.p);put(e2,fs.p2);put(e3,fs.p3);if(s.log)ui.log.innerHTML=s.log;refresh();draw()}
+function onlineApplySnapshot(s){
+ if(!s||s.type!=='battle_state'||s.seq<=onlineBattleLastSeq)return;
+ onlineBattleLastSeq=s.seq;
+ const nextMode=['1v1','2v2','3v3','juggernaut'].includes(s.mode)?s.mode:'1v1';
+ if(mode!==nextMode)reset(nextMode);
+ onlineBattleTurn=s.turn||'host';over=!!s.over;turnBusy=onlineBattleTurn!=='guest';
+ if(onlineBattleRole==='guest'){
+   playerTurn=s.enemyTurnCount||0;enemyTurnCount=s.playerTurn||0;
+   playerGunReady=s.enemyGunReady||0;enemyGunReady=s.playerGunReady||0;
+   playerBazookaReady=s.enemyBazookaReady||0;enemyBazookaReady=s.playerBazookaReady||0;
+ }else{
+   playerTurn=s.playerTurn||0;enemyTurnCount=s.enemyTurnCount||0;
+   playerGunReady=s.playerGunReady||0;playerBazookaReady=s.playerBazookaReady||0;
+   enemyGunReady=s.enemyGunReady||0;enemyBazookaReady=s.enemyBazookaReady||0;
+ }
+ const put=(f,d)=>{if(f&&d)for(const k of ['hp','maxHp','en','maxEn','shield','maxShield','guard','pose','poseTime','flash','lean','attackKind','hit','name','x'])if(d[k]!==undefined)f[k]=d[k]};
+ const fs=s.fighters||{};put(p,fs.e);put(p2,fs.e2);put(p3,fs.e3);put(e,fs.p);put(e2,fs.p2);put(e3,fs.p3);
+ if(s.log)ui.log.innerHTML=s.log;
+ refresh();draw();
+ if(over&&!matchEnded)scheduleLobbyReturn(s.winner==='guest',Number.isFinite(s.reward)?s.reward:null);
+}
 function onlineStart(role,send,selectedMode='1v1'){onlineBattleRole=role;onlineBattleSend=send;onlineBattleTurn='host';onlineBattleSeq=0;onlineBattleLastSeq=-1;mode='1v1';reset();mode='1v1';onlineBattleRole=role;onlineBattleSend=send;onlineBattleTurn='host';if(role==='guest'){turnBusy=true;message('ONLINE DUEL','Waiting for the host to make the first move.')}onlinePublish()}
-function onlineRemoteAction(d){if(onlineBattleRole!=='host'||onlineBattleTurn!=='guest'||over||!d)return;const kind=['attack','heavy','special','bazooka','defend','heal','shield','power15','power20','power30'].includes(d.kind)?d.kind:'attack';turnBusy=true;onlineBattleTurn='host';const cost=kind==='heavy'?16:(manaSkills[kind]?.cost||0);if(!['defend','heal','shield'].includes(kind)&&e.en<cost){turnBusy=false;onlineBattleTurn='guest';onlinePublish();return}
- if(kind==='defend'){e.guard=1.8;e.en=Math.min(e.maxEn,e.en+12);pose(e,'guard',.75);message('OPPONENT DEFENDS','Opponent is guarding and recovering energy.')}
- else if(kind==='heal'){const b=e.hp;e.hp=Math.min(e.maxHp,e.hp+18);floatingText(e,'+'+(e.hp-b),'heal');message('OPPONENT HEALS','Opponent recovered health.')}
- else if(kind==='shield'){e.maxShield=Math.max(e.maxShield,20);const b=e.shield;e.shield=Math.min(20,e.shield+12);floatingText(e,'+'+(e.shield-b),'shield');message('OPPONENT SHIELDS','Opponent added a shield.')}
- else{e.en-=cost;const target=p;if(kind==='special'||kind==='bazooka'){pose(e,kind==='bazooka'?'bazooka':'pistol',1.35);fx.push({x:e.x-38,y:238,life:kind==='bazooka'?1:.7,type:kind==='bazooka'?'rocket':'bullet',fromX:e.x-38,toX:target.x+28,fromY:238,toY:238,progress:0,owner:'enemy'})}else if(manaSkills[kind]){pose(e,'cast',1.05);fx.push({x:e.x-34,y:235,life:.78,total:.78,type:'energy',fromX:e.x-34,toX:target.x+30,fromY:235,toY:235,progress:0,owner:'enemy',power:kind})}else{pose(e,kind==='heavy'?'heavy':'attack',1.05);combatMoves.push({fighter:e,from:e.x,to:target.x+92,start:performance.now(),approach:220,strike:kind==='heavy'?470:390,retreat:790,end:1060,kind,hit:false})}
- setTimeout(()=>{if(over)return;if(manaSkills[kind])resolveSkillHits(e,target,kind);else hit(e,target,kind);refresh();onlinePublish()},kind==='bazooka'?760:kind==='special'?560:manaSkills[kind]?650:kind==='heavy'?490:410)}
- refresh();onlinePublish();setTimeout(()=>{if(over)return;turnBusy=true;onlineBattleTurn='guest';message('YOUR TURN','Your move. Choose a skill and target.');refresh();onlinePublish()},1250)}
+function onlineRemoteAction(d){
+ if(onlineBattleRole!=='host'||onlineBattleTurn!=='guest'||over||!d)return;
+ const allowed=['attack','heavy','special','bazooka','defend','heal','shield','power15','power20','power30'];
+ if(!allowed.includes(d.kind))return;
+ const kind=d.kind,cost=kind==='heavy'?16:(manaSkills[kind]?.cost||0);
+ const reject=text=>{turnBusy=true;onlineBattleTurn='guest';message('ACTION UNAVAILABLE',text);refresh();onlinePublish();};
+ if(!e||e.hp<=0){reject('Your fighter is out of the fight.');return;}
+ if(e.en<cost){reject('Not enough mana for that action. Choose a lower-cost action.');return;}
+ if(kind==='special'&&enemyTurnCount<enemyGunReady){reject('Pistol is recharging. Choose another action this turn.');return;}
+ if(kind==='bazooka'&&enemyTurnCount<enemyBazookaReady){reject('Bazooka is recharging. Choose another action this turn.');return;}
+ turnBusy=true;onlineBattleTurn='host';enemyTurnCount++;
+ if(kind==='special')enemyGunReady=enemyTurnCount+1;
+ if(kind==='bazooka')enemyBazookaReady=enemyTurnCount+2;
+ if(kind==='defend'){e.guard=1.8;e.en=Math.min(e.maxEn,e.en+12);pose(e,'guard',.75);message('OPPONENT DEFENDS','Opponent is guarding and recovering mana.');}
+ else if(kind==='heal'){const before=e.hp;e.hp=Math.min(e.maxHp,e.hp+18);floatingText(e,'+'+(e.hp-before),'heal');message('OPPONENT HEALS','Opponent recovered health.');}
+ else if(kind==='shield'){e.maxShield=Math.max(e.maxShield,20);const before=e.shield;e.shield=Math.min(20,e.shield+12);floatingText(e,'+'+(e.shield-before),'shield');message('OPPONENT SHIELDS','Opponent added a shield.');}
+ else{
+   e.en-=cost;const target=p;
+   if(kind==='special'||kind==='bazooka'){pose(e,kind==='bazooka'?'bazooka':'pistol',1.35);fx.push({x:e.x-38,y:238,life:kind==='bazooka'?1:.7,type:kind==='bazooka'?'rocket':'bullet',fromX:e.x-38,toX:target.x+28,fromY:238,toY:238,progress:0,owner:'enemy'});}
+   else if(manaSkills[kind]){pose(e,'cast',1.05);fx.push({x:e.x-34,y:235,life:.78,total:.78,type:'energy',fromX:e.x-34,toX:target.x+30,fromY:235,toY:235,progress:0,owner:'enemy',power:kind});}
+   else{pose(e,kind==='heavy'?'heavy':'attack',1.05);combatMoves.push({fighter:e,from:e.x,to:target.x+92,start:performance.now(),approach:220,strike:kind==='heavy'?470:390,retreat:790,end:1060,kind,hit:false});}
+   setTimeout(()=>{if(over)return;if(manaSkills[kind])resolveSkillHits(e,target,kind);else hit(e,target,kind);refresh();onlinePublish();},kind==='bazooka'?760:kind==='special'?560:manaSkills[kind]?650:kind==='heavy'?490:410);
+ }
+ refresh();onlinePublish();
+ setTimeout(()=>{if(over)return;turnBusy=false;onlineBattleTurn='host';message('YOUR TURN','Your move. Choose an action and target.');refresh();onlinePublish();},1250);
+}
 window.__onlineBattle={start:onlineStart,apply:onlineApplySnapshot,remoteAction:onlineRemoteAction,publish:onlinePublish,get role(){return onlineBattleRole},get turn(){return onlineBattleTurn}};
 window.__onlineBattleActionSend=null;
 
