@@ -525,7 +525,7 @@ body{display:block!important;background:radial-gradient(ellipse at 50% 0%,#142d4
 <div class="app">
   <div class="top">
     <div><div class="logo">EPIC <span>DUEL</span></div><div class="sub">TURN-BASED COMBAT PROTOTYPE</div></div>
-    <div class="header-wallet"><div class="wallet-pill">🪙 <span id="goldAmount">500</span> GOLD</div><div class="badge" id="modeBadge">2 VS 2 · TEAM BATTLE</div></div>
+    <div class="header-wallet"><div class="wallet-pill">🪙 <span id="goldAmount">500</span> GOLD</div><div class="badge" id="modeBadge">1 VS 1 · DUEL</div></div>
   </div>
   <div class="arena">
     <div class="fighters">
@@ -637,7 +637,7 @@ pHP:document.getElementById('pHP'),eHP:document.getElementById('eHP'),pEN:docume
 pHPtext:document.getElementById('pHPtext'),eHPtext:document.getElementById('eHPtext'),pENtext:document.getElementById('pENtext'),eENtext:document.getElementById('eENtext'),p2HPtext:document.getElementById('p2HPtext'),e2HPtext:document.getElementById('e2HPtext'),p3HPtext:document.getElementById('p3HPtext'),e3HPtext:document.getElementById('e3HPtext'),p2ENtext:document.getElementById('p2ENtext'),e2ENtext:document.getElementById('e2ENtext'),p3ENtext:document.getElementById('p3ENtext'),e3ENtext:document.getElementById('e3ENtext'),log:document.getElementById('log')
 }
 ;
-let p,e,p2,e2,p3,e3,mode='2v2',targetKey='e',supportKey='p',turnBusy=false,over=false,fx=[],last=performance.now(),elapsed=0,combatMoves=[],playerTurn=0,enemyTurnCount=0,playerGunReady=0,playerBazookaReady=0,enemyGunReady=0,enemyBazookaReady=0,pendingKind=null,matchEnded=false;
+let p,e,p2,e2,p3,e3,mode='1v1',targetKey='e',supportKey='p',turnBusy=false,over=false,fx=[],last=performance.now(),elapsed=0,combatMoves=[],playerTurn=0,enemyTurnCount=0,playerGunReady=0,playerBazookaReady=0,enemyGunReady=0,enemyBazookaReady=0,pendingKind=null,matchEnded=false;
 const skillPoints={damage:0,health:0,shield:0,lifesteal:0,mana:0,defense:0};
 const skillNames=['damage','health','shield','lifesteal','mana','defense'];
 const weaponTiers=[15,35,55,75,95,115,135,155,180,200];
@@ -1674,9 +1674,7 @@ document.getElementById('power15').onclick=()=>selectAction('power15');
 document.getElementById('power20').onclick=()=>selectAction('power20');
 document.getElementById('power30').onclick=()=>selectAction('power30');
 document.getElementById('restart').onclick=reset;
-document.getElementById('mode1').onclick=()=>showModeSelect();
-document.getElementById('mode2').onclick=()=>showModeSelect();
-document.getElementById('modeJ').onclick=()=>showModeSelect();
+const modeButton=document.getElementById('mode1');if(modeButton)modeButton.onclick=()=>showModeSelect();
 function enterFullscreen(){const root=document.documentElement;if(!document.fullscreenElement&&root.requestFullscreen){root.requestFullscreen().catch(()=>{});}}
 document.getElementById('fullscreenBtn').onclick=enterFullscreen;
 document.addEventListener('fullscreenchange',()=>{const b=document.getElementById('fullscreenBtn');if(b)b.textContent=document.fullscreenElement?'⛶ FULLSCREEN ACTIVE':'⛶ ENTER FULLSCREEN';});
@@ -2206,8 +2204,8 @@ body.battle-active .app .header-wallet { display:none!important; }
   <div class="online-row"><button id="onlineHostBtn">CREATE ROOM & INVITE</button><button id="onlineJoinBtn">JOIN FROM LINK</button></div>
   <div style="margin-top:12px;color:#9eeaf2;font-weight:800">1 VS 1 DUEL · AUTO START · BLUE VS RED</div>
   <select id="onlineModeSelect" aria-label="Battle mode" style="display:none"><option value="1v1" selected>1 VS 1</option></select>
-  <label for="onlineSideSelect" style="display:block;margin-top:8px;color:#9eeaf2;font-weight:800">YOUR SIDE</label>
-  <select id="onlineSideSelect" style="box-sizing:border-box;width:100%;padding:12px;margin:5px 0;background:#0d2032;color:#eaffff;border:1px solid #3bc8d8">
+  <label for="onlineSideSelect" style="display:block;margin-top:8px;color:#9eeaf2;font-weight:800">YOUR TEAM (AUTOMATIC)</label>
+  <select id="onlineSideSelect" disabled style="box-sizing:border-box;width:100%;padding:12px;margin:5px 0;background:#0d2032;color:#eaffff;border:1px solid #3bc8d8">
    <option value="blue">BLUE TEAM</option><option value="red">RED TEAM</option>
   </select>
   <input id="onlineInviteLink" readonly placeholder="Your invite link will appear here">
@@ -2256,7 +2254,6 @@ body.battle-active .app .header-wallet { display:none!important; }
   }
  function startBattle(){if(!conn||!conn.open){setStatus('Opponent is not connected.');return;}if(!hostMode)return;const cfg={mode:'1v1',side:'blue'};applyConfig(cfg,true);conn.send({type:'start_battle',config:cfg});launchLocalBattle(cfg);}
  function wire(){if(!conn)return;conn.on('open',()=>{conn.send({type:'hello',name:/Mobi|Android/i.test(navigator.userAgent)?'Phone player':'Computer player'});if(hostMode){const cfg={mode:'1v1',side:'blue'};applyConfig(cfg,true);conn.send({type:'room_config',config:cfg});setStatus('Opponent connected. Starting the 1 VS 1 duel…');conn.send({type:'start_battle',config:cfg});launchLocalBattle(cfg);}else{applyConfig({mode:'1v1',side:'red'},true);setStatus('Connected. Waiting for the duel to start…');}});conn.on('data',d=>{if(!d)return;if(d.type==='hello'&&!hostMode)setStatus('Connected to the room creator. Starting the 1 VS 1 duel…');if(d.type==='room_config'&&!hostMode)applyConfig({mode:'1v1',side:'red'},true);if(d.type==='config_update'&&hostMode&&conn&&conn.open)conn.send({type:'room_config',config:{mode:'1v1',side:'blue'}});if(d.type==='start_battle'&&!hostMode){launchLocalBattle({mode:'1v1',side:'red'});setStatus('ONLINE 1 VS 1 · YOU ARE RED');}if(d.type==='battle_state'&&window.__onlineBattle)window.__onlineBattle.apply(d);if(d.type==='battle_action'&&hostMode&&window.__onlineBattle)window.__onlineBattle.remoteAction(d)});conn.on('close',()=>setStatus('The other player disconnected.'));conn.on('error',()=>setStatus('Connection failed. Reopen the invite link and try again.'))}
- const townMode3=$('townMode3');if(townMode3)townMode3.addEventListener('click',()=>startFromLobby('1v1'));
  $('townOnline').addEventListener('click',()=>{show();const room=new URL(location.href).searchParams.get('room');if(room){link.value=location.href;join(room);}else setStatus('Choose CREATE ROOM on this device, then open the generated link on your other device.');});
  $('onlineStartBtn').style.display='none';$('onlineStartBtn').onclick=startBattle;
  $('onlineModeSelect').onchange=()=>{$('onlineModeSelect').value='1v1';};
