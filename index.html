@@ -1815,8 +1815,8 @@ function townFrame(now){drawTownHall(now);requestAnimationFrame(townFrame)}
 document.getElementById('townBuild').onclick=()=>{document.getElementById('townOverlay').style.display='none';document.getElementById('setupOverlay').style.display='flex';renderSkillSetup()};
 // Removed a stale handler for a button that no longer exists; it previously threw a TypeError and prevented all lobby/shop handlers below from registering.
 document.getElementById('townMode1').onclick=()=>startFromLobby('1v1');
-document.getElementById('townMode2').onclick=()=>startFromLobby('1v1');
-document.getElementById('townModeJ').onclick=()=>startFromLobby('1v1');
+const unusedTownMode2=document.getElementById('townMode2');if(unusedTownMode2)unusedTownMode2.onclick=()=>startFromLobby('1v1');
+const unusedTownModeJ=document.getElementById('townModeJ');if(unusedTownModeJ)unusedTownModeJ.onclick=()=>startFromLobby('1v1');
 document.getElementById('townMerchant').onclick=openShop;
 document.getElementById('closeShop').onclick=closeShop;
 document.getElementById('shopBackToLobby').onclick=closeShop;
