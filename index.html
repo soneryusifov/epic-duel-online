@@ -687,16 +687,13 @@ function reset(){
  if(mode==='juggernaut'){e.maxHp=125;e.hp=125;e2.maxHp=125;e2.hp=125;e.maxEn=100;e.en=100;e2.maxEn=100;e2.en=100;e.juggernautSkillShare=22;e2.juggernautSkillShare=23;}
  p.x=['2v2','juggernaut','3v3'].includes(mode)?175:250;if(p2)p2.x=245;if(p3)p3.x=315;e.x=['2v2','juggernaut','3v3'].includes(mode)?725:650;if(e2)e2.x=655;if(e3)e3.x=585;
  turnBusy=false;over=false;fx=[];combatMoves=[];playerTurn=0;enemyTurnCount=0;playerGunReady=0;playerBazookaReady=0;enemyGunReady=0;enemyBazookaReady=0;targetKey='e';supportKey='p';
- const names={'1v1':'1 VS 1 · DUEL','2v2':'2 VS 2 · TEAM BATTLE','3v3':'3 VS 3 · SQUAD BATTLE','juggernaut':'JUGGERNAUT · 1 VS 2'};
- document.getElementById('modeBadge').textContent=names[mode];
- document.getElementById('mode1').classList.toggle('active',mode==='1v1');document.getElementById('mode2').classList.toggle('active',mode==='2v2');document.getElementById('modeJ').classList.toggle('active',mode==='juggernaut');
- const hasSecond=['2v2','juggernaut'].includes(mode);
- document.getElementById('targetRow').style.display=hasSecond||mode==='2v2'||mode==='3v3'?'flex':'none';
- document.getElementById('targetE2').style.display=hasSecond?'inline-block':'none';
- document.getElementById('p2Card').style.display=['2v2','3v3'].includes(mode)?'block':'none';document.getElementById('p3Card').style.display=mode==='3v3'?'block':'none';document.getElementById('e2Card').style.display=hasSecond||mode==='3v3'?'block':'none';document.getElementById('e3Card').style.display=mode==='3v3'?'block':'none';
- document.getElementById('supportP2').style.display=['2v2','3v3'].includes(mode)?'inline-block':'none';document.getElementById('supportP3').style.display=mode==='3v3'?'inline-block':'none';document.getElementById('targetE3').style.display=mode==='3v3'?'inline-block':'none';
- ui.log.innerHTML='<strong>'+names[mode]+'</strong> — Choose an action, then select your target. Equipment attacks do not consume energy.';
- refresh();draw();
+  mode='1v1';
+  document.getElementById('modeBadge').textContent='1 VS 1 · DUEL';
+  const mode1=document.getElementById('mode1');if(mode1)mode1.classList.add('active');
+  const targetRow=document.getElementById('targetRow');if(targetRow)targetRow.style.display='none';
+  ['p2Card','p3Card','e2Card','e3Card','targetE2','targetE3','supportP2','supportP3'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none'});
+  ui.log.innerHTML='<strong>1 VS 1 · DUEL</strong> — Choose an action. Equipment attacks do not consume energy.';
+refresh();draw();
 }
 function refresh(){
  const fighters=[['p',p],['e',e],['p2',p2],['e2',e2],['p3',p3],['e3',e3]];
@@ -1991,11 +1988,11 @@ TARGETING AND ANIMATION UPDATE NOTES
 
 /* Host-authoritative online duel bridge. */
 let onlineBattleRole=null,onlineBattleSend=null,onlineBattleTurn='host',onlineBattleSeq=0,onlineBattleLastSeq=-1;
-function onlineFighterState(f){return f?{hp:f.hp,maxHp:f.maxHp,en:f.en,maxEn:f.maxEn,shield:f.shield,maxShield:f.maxShield,guard:f.guard,pose:f.pose,poseTime:f.poseTime,flash:f.flash,lean:f.lean,attackKind:f.attackKind,hit:f.hit,name:f.name}:null}
+function onlineFighterState(f){return f?{x:f.x,hp:f.hp,maxHp:f.maxHp,en:f.en,maxEn:f.maxEn,shield:f.shield,maxShield:f.maxShield,guard:f.guard,pose:f.pose,poseTime:f.poseTime,flash:f.flash,lean:f.lean,attackKind:f.attackKind,hit:f.hit,name:f.name}:null}
 function onlineSnapshot(){return {type:'battle_state',seq:++onlineBattleSeq,mode,turn:onlineBattleTurn,over,playerTurn,enemyTurnCount,playerGunReady,playerBazookaReady,enemyGunReady,enemyBazookaReady,fighters:{p:onlineFighterState(p),p2:onlineFighterState(p2),p3:onlineFighterState(p3),e:onlineFighterState(e),e2:onlineFighterState(e2),e3:onlineFighterState(e3)},log:ui.log.innerHTML}}
 function onlinePublish(){if(onlineBattleRole==='host'&&onlineBattleSend)onlineBattleSend(onlineSnapshot())}
-function onlineApplySnapshot(s){if(!s||s.type!=='battle_state'||s.seq<=onlineBattleLastSeq)return;onlineBattleLastSeq=s.seq;const nextMode=['1v1','2v2','3v3','juggernaut'].includes(s.mode)?s.mode:'1v1';if(mode!==nextMode){mode=nextMode;reset()}onlineBattleTurn=s.turn||'host';over=!!s.over;turnBusy=onlineBattleTurn!=='guest';playerTurn=s.playerTurn||0;enemyTurnCount=s.enemyTurnCount||0;playerGunReady=s.playerGunReady||0;playerBazookaReady=s.playerBazookaReady||0;enemyGunReady=s.enemyGunReady||0;enemyBazookaReady=s.enemyBazookaReady||0;const put=(f,d)=>{if(f&&d)for(const k of ['hp','maxHp','en','maxEn','shield','maxShield','guard','pose','poseTime','flash','lean','attackKind','hit','name','x'])if(d[k]!==undefined)f[k]=d[k]};const fs=s.fighters||{};put(p,fs.e);put(p2,fs.e2);put(p3,fs.e3);put(e,fs.p);put(e2,fs.p2);put(e3,fs.p3);if(s.log)ui.log.innerHTML=s.log;refresh();draw()}
-function onlineStart(role,send,selectedMode='1v1'){onlineBattleRole=role;onlineBattleSend=send;onlineBattleTurn='host';onlineBattleSeq=0;onlineBattleLastSeq=-1;const chosen=['1v1','2v2','3v3','juggernaut'].includes(selectedMode)?selectedMode:'1v1';mode=chosen;reset();mode=chosen;onlineBattleRole=role;onlineBattleSend=send;onlineBattleTurn='host';if(role==='guest'){turnBusy=true;message('ONLINE DUEL','Waiting for the host to make the first move.')}onlinePublish()}
+function onlineApplySnapshot(s){if(!s||s.type!=='battle_state'||s.seq<=onlineBattleLastSeq)return;onlineBattleLastSeq=s.seq;mode='1v1';onlineBattleTurn=s.turn||'host';over=!!s.over;turnBusy=onlineBattleTurn!=='guest';playerTurn=s.playerTurn||0;enemyTurnCount=s.enemyTurnCount||0;playerGunReady=s.playerGunReady||0;playerBazookaReady=s.playerBazookaReady||0;enemyGunReady=s.enemyGunReady||0;enemyBazookaReady=s.enemyBazookaReady||0;const put=(f,d)=>{if(f&&d)for(const k of ['hp','maxHp','en','maxEn','shield','maxShield','guard','pose','poseTime','flash','lean','attackKind','hit','name','x'])if(d[k]!==undefined)f[k]=d[k]};const fs=s.fighters||{};put(p,fs.e);put(p2,fs.e2);put(p3,fs.e3);put(e,fs.p);put(e2,fs.p2);put(e3,fs.p3);if(s.log)ui.log.innerHTML=s.log;refresh();draw()}
+function onlineStart(role,send,selectedMode='1v1'){onlineBattleRole=role;onlineBattleSend=send;onlineBattleTurn='host';onlineBattleSeq=0;onlineBattleLastSeq=-1;mode='1v1';reset();mode='1v1';onlineBattleRole=role;onlineBattleSend=send;onlineBattleTurn='host';if(role==='guest'){turnBusy=true;message('ONLINE DUEL','Waiting for the host to make the first move.')}onlinePublish()}
 function onlineRemoteAction(d){if(onlineBattleRole!=='host'||onlineBattleTurn!=='guest'||over||!d)return;const kind=['attack','heavy','special','bazooka','defend','heal','shield','power15','power20','power30'].includes(d.kind)?d.kind:'attack';turnBusy=true;onlineBattleTurn='host';const cost=kind==='heavy'?16:(manaSkills[kind]?.cost||0);if(!['defend','heal','shield'].includes(kind)&&e.en<cost){turnBusy=false;onlineBattleTurn='guest';onlinePublish();return}
  if(kind==='defend'){e.guard=1.8;e.en=Math.min(e.maxEn,e.en+12);pose(e,'guard',.75);message('OPPONENT DEFENDS','Opponent is guarding and recovering energy.')}
  else if(kind==='heal'){const b=e.hp;e.hp=Math.min(e.maxHp,e.hp+18);floatingText(e,'+'+(e.hp-b),'heal');message('OPPONENT HEALS','Opponent recovered health.')}
@@ -2205,9 +2202,9 @@ body.battle-active .app .header-wallet { display:none!important; }
 <div id="onlineRoomOverlay" role="dialog" aria-modal="true">
  <section class="online-card">
   <h2>ONLINE DUEL ROOM</h2>
-  <p>Create a private room on one device, then send the generated invite link to your other device. Online combat synchronization is still being worked on; do not treat the current online battle as fully synchronized yet.</p>
+  <p>Create a room on one device and share its invite link. When the second player opens the link, the 1 VS 1 duel starts automatically. The room creator is BLUE; the joining player is RED.</p>
   <div class="online-row"><button id="onlineHostBtn">CREATE ROOM & INVITE</button><button id="onlineJoinBtn">JOIN FROM LINK</button></div>
-  <div style="margin-top:12px;color:#9eeaf2;font-weight:800">BATTLE MODE: 1 VS 1 ONLY</div>
+  <div style="margin-top:12px;color:#9eeaf2;font-weight:800">1 VS 1 DUEL · AUTO START · BLUE VS RED</div>
   <select id="onlineModeSelect" aria-label="Battle mode" style="display:none"><option value="1v1" selected>1 VS 1</option></select>
   <label for="onlineSideSelect" style="display:block;margin-top:8px;color:#9eeaf2;font-weight:800">YOUR SIDE</label>
   <select id="onlineSideSelect" style="box-sizing:border-box;width:100%;padding:12px;margin:5px 0;background:#0d2032;color:#eaffff;border:1px solid #3bc8d8">
@@ -2244,8 +2241,8 @@ body.battle-active .app .header-wallet { display:none!important; }
  async function join(id){show();if(!id){setStatus('No room ID found in this link. Ask the host to send the full invite link.');return;}try{await loadPeer();const result=await makePeer();hostMode=false;setStatus('Connecting to the host…');conn=result.candidate.connect(id,{reliable:true});wire();}catch(e){setStatus('Could not join ('+(e&&e.type||e&&e.message||'unknown')+'). The room server could not be reached. Open the deployed HTTPS game link and try again.');}}
  function showStart(){ $('onlineStartBtn').style.display='block'; }
  let roomConfig={mode:'1v1',side:'blue'};
- function readConfig(){roomConfig={mode:'1v1',side:$('onlineSideSelect').value};$('onlineModeSelect').value='1v1';return roomConfig;}
- function applyConfig(cfg,fromPeer=false){if(!cfg)return;roomConfig={mode:'1v1',side:cfg.side==='red'?'red':'blue'};$('onlineModeSelect').value='1v1';if(fromPeer)$('onlineSideSelect').value=roomConfig.side;}
+ function readConfig(){roomConfig={mode:'1v1',side:hostMode?'blue':'red'};$('onlineModeSelect').value='1v1';$('onlineSideSelect').value=roomConfig.side;return roomConfig;}
+ function applyConfig(cfg,fromPeer=false){roomConfig={mode:'1v1',side:hostMode?'blue':'red'};$('onlineModeSelect').value='1v1';$('onlineSideSelect').value=roomConfig.side;}
  window.__onlineBattleActionSend=d=>{if(conn&&conn.open)conn.send(d)};
   function launchLocalBattle(cfg){
     const selectedMode='1v1';
@@ -2255,13 +2252,13 @@ body.battle-active .app .header-wallet { display:none!important; }
     const app=document.querySelector('.app');if(app)app.style.visibility='visible';
     mode=selectedMode;
     window.__onlineBattle.start(hostMode?'host':'guest',d=>{if(conn&&conn.open)conn.send(d)},selectedMode);
-    setStatus('ONLINE '+selectedMode.toUpperCase()+' · '+(hostMode?'Your turn first.':'Waiting for the host turn…'));
+    setStatus('ONLINE 1 VS 1 · '+(hostMode?'YOU ARE BLUE':'YOU ARE RED'));
   }
- function startBattle(){if(!conn||!conn.open){setStatus('Opponent is not connected.');return;}const cfg={mode:'1v1',side:(hostMode?readConfig():roomConfig).side};applyConfig(cfg,true);conn.send({type:'start_battle',config:cfg});launchLocalBattle(cfg);}
- function wire(){if(!conn)return;conn.on('open',()=>{setStatus('CONNECTED: '+readConfig().mode.toUpperCase()+' ready. Host presses START BATTLE.');showStart();conn.send({type:'hello',name:/Mobi|Android/i.test(navigator.userAgent)?'Phone player':'Computer player'});if(hostMode)conn.send({type:'room_config',config:readConfig()})});conn.on('data',d=>{if(!d)return;if(d.type==='hello'){setStatus('CONNECTED with '+d.name+'. Online 1v1 ready.');showStart()}if(d.type==='room_config'&&!hostMode){applyConfig(d.config||{mode:'1v1',side:'blue'},true);setStatus('Online 1v1 ready. Waiting for host…')}if(d.type==='config_update'&&hostMode){setStatus('Guest cannot change the host battle mode. Host selection: '+readConfig().mode.toUpperCase()+'.');if(conn&&conn.open)conn.send({type:'room_config',config:readConfig()});}if(d.type==='start_battle')launchLocalBattle(d.config||{mode:'1v1',side:'blue'});if(d.type==='battle_state'&&window.__onlineBattle)window.__onlineBattle.apply(d);if(d.type==='battle_action'&&hostMode&&window.__onlineBattle)window.__onlineBattle.remoteAction(d)});conn.on('close',()=>setStatus('The other player disconnected.'));conn.on('error',()=>setStatus('Connection failed. Reopen the invite link and try again.'))}
+ function startBattle(){if(!conn||!conn.open){setStatus('Opponent is not connected.');return;}if(!hostMode)return;const cfg={mode:'1v1',side:'blue'};applyConfig(cfg,true);conn.send({type:'start_battle',config:cfg});launchLocalBattle(cfg);}
+ function wire(){if(!conn)return;conn.on('open',()=>{conn.send({type:'hello',name:/Mobi|Android/i.test(navigator.userAgent)?'Phone player':'Computer player'});if(hostMode){const cfg={mode:'1v1',side:'blue'};applyConfig(cfg,true);conn.send({type:'room_config',config:cfg});setStatus('Opponent connected. Starting the 1 VS 1 duel…');conn.send({type:'start_battle',config:cfg});launchLocalBattle(cfg);}else{applyConfig({mode:'1v1',side:'red'},true);setStatus('Connected. Waiting for the duel to start…');}});conn.on('data',d=>{if(!d)return;if(d.type==='hello'&&!hostMode)setStatus('Connected to the room creator. Starting the 1 VS 1 duel…');if(d.type==='room_config'&&!hostMode)applyConfig({mode:'1v1',side:'red'},true);if(d.type==='config_update'&&hostMode&&conn&&conn.open)conn.send({type:'room_config',config:{mode:'1v1',side:'blue'}});if(d.type==='start_battle'&&!hostMode){launchLocalBattle({mode:'1v1',side:'red'});setStatus('ONLINE 1 VS 1 · YOU ARE RED');}if(d.type==='battle_state'&&window.__onlineBattle)window.__onlineBattle.apply(d);if(d.type==='battle_action'&&hostMode&&window.__onlineBattle)window.__onlineBattle.remoteAction(d)});conn.on('close',()=>setStatus('The other player disconnected.'));conn.on('error',()=>setStatus('Connection failed. Reopen the invite link and try again.'))}
  const townMode3=$('townMode3');if(townMode3)townMode3.addEventListener('click',()=>startFromLobby('1v1'));
  $('townOnline').addEventListener('click',()=>{show();const room=new URL(location.href).searchParams.get('room');if(room){link.value=location.href;join(room);}else setStatus('Choose CREATE ROOM on this device, then open the generated link on your other device.');});
- $('onlineStartBtn').onclick=startBattle;
+ $('onlineStartBtn').style.display='none';$('onlineStartBtn').onclick=startBattle;
  $('onlineModeSelect').onchange=()=>{$('onlineModeSelect').value='1v1';};
  $('onlineSideSelect').onchange=()=>{const cfg=readConfig();if(conn&&conn.open&&hostMode){conn.send({type:'room_config',config:cfg});setStatus('Side set to '+cfg.side.toUpperCase()+'. Start when ready.');}else if(conn&&conn.open){conn.send({type:'config_update',config:cfg});setStatus('Selection sent to host.');}};
  $('onlineHostBtn').onclick=async()=>{hostMode=true;await host();};
