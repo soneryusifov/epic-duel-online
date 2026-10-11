@@ -1997,7 +1997,7 @@ function onlineRemoteAction(d){if(onlineBattleRole!=='host'||onlineBattleTurn!==
  else if(kind==='shield'){e.maxShield=Math.max(e.maxShield,20);const b=e.shield;e.shield=Math.min(20,e.shield+12);floatingText(e,'+'+(e.shield-b),'shield');message('OPPONENT SHIELDS','Opponent added a shield.')}
  else{e.en-=cost;const target=p;if(kind==='special'||kind==='bazooka'){pose(e,kind==='bazooka'?'bazooka':'pistol',1.35);fx.push({x:e.x-38,y:238,life:kind==='bazooka'?1:.7,type:kind==='bazooka'?'rocket':'bullet',fromX:e.x-38,toX:target.x+28,fromY:238,toY:238,progress:0,owner:'enemy'})}else if(manaSkills[kind]){pose(e,'cast',1.05);fx.push({x:e.x-34,y:235,life:.78,total:.78,type:'energy',fromX:e.x-34,toX:target.x+30,fromY:235,toY:235,progress:0,owner:'enemy',power:kind})}else{pose(e,kind==='heavy'?'heavy':'attack',1.05);combatMoves.push({fighter:e,from:e.x,to:target.x+92,start:performance.now(),approach:220,strike:kind==='heavy'?470:390,retreat:790,end:1060,kind,hit:false})}
  setTimeout(()=>{if(over)return;if(manaSkills[kind])resolveSkillHits(e,target,kind);else hit(e,target,kind);refresh();onlinePublish()},kind==='bazooka'?760:kind==='special'?560:manaSkills[kind]?650:kind==='heavy'?490:410)}
- refresh();onlinePublish();setTimeout(()=>{if(over)return;turnBusy=false;onlineBattleTurn='host';onlinePublish()},1250)}
+ refresh();onlinePublish();setTimeout(()=>{if(over)return;turnBusy=true;onlineBattleTurn='guest';message('YOUR TURN','Your move. Choose a skill and target.');refresh();onlinePublish()},1250)}
 window.__onlineBattle={start:onlineStart,apply:onlineApplySnapshot,remoteAction:onlineRemoteAction,publish:onlinePublish,get role(){return onlineBattleRole},get turn(){return onlineBattleTurn}};
 window.__onlineBattleActionSend=null;
 
