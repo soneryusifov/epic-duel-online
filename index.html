@@ -812,7 +812,7 @@ function hit(att,def,kind,allowMulti=false,damageMultiplier=null){
  if(def.hp<=0){fx.push({x:def.x,y:270,life:.8,type:'down'});message('FIGHTER DOWN',`${def.name||'Fighter'} is out of the fight.`)}
  if(allDown(teamEnemy())){over=true;turnBusy=false;message('VICTORY!',mode==='juggernaut'?'You defeated both challengers! Juggernaut victory!':['2v2','3v3'].includes(mode)?'The rival team is defeated. Team victory!':'You defeated your rival!');scheduleLobbyReturn(true)}
  if(allDown(teamPlayer())){over=true;turnBusy=false;message('DEFEAT','Your entire team has been defeated.');scheduleLobbyReturn(false)}
- refresh();
+ refresh();if(window.__onlineBattle&&window.__onlineBattle.role==='host')onlinePublish();
 }
 function resolveSkillHits(attacker,target,kind){
  if(!attacker||!target||target.hp<=0)return;
